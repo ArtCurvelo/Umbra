@@ -20,6 +20,12 @@ public sealed class Bench
     public int Restarts;
     public readonly bool Measure;
     private readonly Dictionary<string, List<double>> _sections = new();
+    private readonly Dictionary<string, int> _slowTags = new(), _allTags = new();
+    private int _slow;
+    private readonly List<double> _prevDelta = new();
+    private HashSet<string> _previousTags = new();
+    private Dictionary<string, double> _previousSections = new();
+    private readonly List<string> _slowDetail = new();
 
     public Bench(Main main)
     {
@@ -35,9 +41,21 @@ public sealed class Bench
         var o = _main.Options;
         if (_elapsed < o.BenchWarmup) { Profiler.Frame.Clear(); return; }
         foreach (var (k, v) in Profiler.Frame) { if (!_sections.ContainsKey(k)) _sections[k] = new(); _sections[k].Add(v); }
+        var sectionsNow = new Dictionary<string, double>(Profiler.Frame);
         Profiler.Frame.Clear();
         var rid = _main.GetViewport().GetViewportRid();
         _frameMs.Add(delta * 1000);
+        foreach (var t in _previousTags) _allTags[t] = _allTags.GetValueOrDefault(t) + 1;
+        if (delta * 1000 > 40)
+        {
+            _slow++;
+            foreach (var t in _previousTags) _slowTags[t] = _slowTags.GetValueOrDefault(t) + 1;
+            if (_previousTags.Count == 0) _slowTags["(nada)"] = _slowTags.GetValueOrDefault("(nada)") + 1;
+            _slowDetail.Add($"{delta * 1000:0} ms: {string.Join(',', _previousTags)} | " + string.Join(' ', _previousSections.Select(kv => $"{kv.Key}={kv.Value:0.0}")));
+        }
+        _previousTags = new HashSet<string>(Profiler.Tags);
+        _previousSections = sectionsNow;
+        Profiler.Tags.Clear();
         _processMs.Add(Performance.GetMonitor(Performance.Monitor.TimeProcess) * 1000);
         _gpuMs.Add(RenderingServer.ViewportGetMeasuredRenderTimeGpu(rid));
         _cpuRenderMs.Add(RenderingServer.ViewportGetMeasuredRenderTimeCpu(rid));
@@ -88,6 +106,10 @@ public sealed class Bench
             ["primitivas_medio"] = Math.Round(_primitives.Average(), 0),
             ["memoria_estatica_mb"] = Math.Round(Performance.GetMonitor(Performance.Monitor.MemoryStatic) / 1048576.0, 1),
             ["nosso_codigo_ms_medio"] = _sections.ToDictionary(kv => kv.Key, kv => Math.Round(kv.Value.Sum() / _frameMs.Count, 2)),
+            ["quadros_lentos_40ms"] = _slow,
+            ["eventos_nos_lentos"] = _slowTags,
+            ["detalhe_lentos"] = _slowDetail,
+            ["eventos_em_todos"] = _allTags,
             ["lutas_recomecadas"] = Restarts,
             ["inimigos_restantes_no_fim"] = _main.Sim.EnemiesRemaining,
         };

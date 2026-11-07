@@ -24,46 +24,65 @@ public static class Materials
 
     public static Color Rgb(int r, int g, int b, float a = 1f) => new(r / 255f, g / 255f, b / 255f, a);
 
-    private static NoiseTexture2D Noise(int seed, float frequency, FastNoiseLite.CellularReturnTypeEnum cellular, Color dark, Color light,
-                                        bool normal, float bump = 6f, float darkStop = .08f)
+    private static NoiseTexture2D Gray(int seed, FastNoiseLite.NoiseTypeEnum type, float frequency, FastNoiseLite.CellularReturnTypeEnum cellular,
+                                       bool fractal, bool normal = false, float bump = 8f)
     {
         var noise = new FastNoiseLite
         {
-            Seed = seed, NoiseType = FastNoiseLite.NoiseTypeEnum.Cellular, Frequency = frequency,
-            CellularReturnType = cellular, FractalType = FastNoiseLite.FractalTypeEnum.Fbm, FractalOctaves = 2, FractalGain = .35f,
+            Seed = seed, NoiseType = type, Frequency = frequency, CellularReturnType = cellular,
+            CellularDistanceFunction = FastNoiseLite.CellularDistanceFunctionEnum.Euclidean, CellularJitter = .9f,
+            FractalType = fractal ? FastNoiseLite.FractalTypeEnum.Fbm : FastNoiseLite.FractalTypeEnum.None, FractalOctaves = 4,
         };
         var texture = new NoiseTexture2D { Noise = noise, Width = 512, Height = 512, Seamless = true, GenerateMipmaps = true };
         if (normal) { texture.AsNormalMap = true; texture.BumpStrength = bump; }
-        else
-        {
-            var ramp = new Gradient();
-            ramp.Offsets = new[] { 0f, darkStop, 1f };
-            ramp.Colors = new[] { dark * .45f, dark, light };
-            texture.ColorRamp = ramp;
-        }
         return texture;
     }
 
-    public static Material Floor()
+    private static NoiseTexture2D? _grime;
+    private static NoiseTexture2D Grime() => _grime ??= Gray(5, FastNoiseLite.NoiseTypeEnum.SimplexSmooth, .012f, default, true);
+
+    /// <summary>Flagstone floor (shaders/floor.gdshader) with contact darkening from the map's wall proximity.</summary>
+    public static ShaderMaterial Floor(Umbra.Domain.World.DungeonMap map)
     {
-        var albedo = Noise(11, .0075f, FastNoiseLite.CellularReturnTypeEnum.Distance2Sub, Rgb(38, 36, 38), Rgb(92, 86, 80), false, darkStop: .06f);
-        var normal = Noise(11, .0075f, FastNoiseLite.CellularReturnTypeEnum.Distance2Sub, default, default, true, 9f);
-        return new StandardMaterial3D
-        {
-            AlbedoTexture = albedo, NormalEnabled = true, NormalTexture = normal, NormalScale = .9f,
-            Roughness = .95f, Uv1Triplanar = true, Uv1WorldTriplanar = true, Uv1Scale = new Vector3(.5f, .5f, .5f),
-        };
+        const float frequency = .0075f;
+        var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/floor.gdshader") };
+        material.SetShaderParameter("stone_cells", Gray(11, FastNoiseLite.NoiseTypeEnum.Cellular, frequency, FastNoiseLite.CellularReturnTypeEnum.CellValue, false));
+        material.SetShaderParameter("stone_edges", Gray(11, FastNoiseLite.NoiseTypeEnum.Cellular, frequency, FastNoiseLite.CellularReturnTypeEnum.Distance2Sub, false));
+        material.SetShaderParameter("stone_normal", Gray(11, FastNoiseLite.NoiseTypeEnum.Cellular, frequency, FastNoiseLite.CellularReturnTypeEnum.Distance2Sub, false, true, 9f));
+        material.SetShaderParameter("grime", Grime());
+        material.SetShaderParameter("proximity", Proximity(map));
+        material.SetShaderParameter("map_size", new Vector2(map.Width, map.Height));
+        return material;
     }
 
+    /// <summary>Ashlar walls (shaders/wall_cutaway.gdshader) with the see-through window around the hero.</summary>
     public static ShaderMaterial Wall()
     {
-        var albedo = Noise(23, .012f, FastNoiseLite.CellularReturnTypeEnum.Distance2Sub, Rgb(44, 40, 40), Rgb(104, 96, 88), false, darkStop: .1f);
-        var normal = Noise(23, .012f, FastNoiseLite.CellularReturnTypeEnum.Distance2Sub, default, default, true, 7f);
         var material = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/wall_cutaway.gdshader") };
-        material.SetShaderParameter("albedo_tex", albedo);
-        material.SetShaderParameter("normal_tex", normal);
-        material.SetShaderParameter("tint", new Color(1f, .96f, .92f));
+        material.SetShaderParameter("grime", Grime());
+        material.SetShaderParameter("normal_tex", Gray(23, FastNoiseLite.NoiseTypeEnum.Cellular, .02f, FastNoiseLite.CellularReturnTypeEnum.Distance2Sub, true, true, 5f));
         return material;
+    }
+
+    /// <summary>4 texels per tile: distance from each texel to the nearest wall tile, 0 at the wall, 1 at 1.2 tiles or more.</summary>
+    public static ImageTexture Proximity(Umbra.Domain.World.DungeonMap map)
+    {
+        const int k = 4; const float reach = 1.2f;
+        var image = Image.CreateEmpty(map.Width * k, map.Height * k, false, Image.Format.R8);
+        for (int py = 0; py < map.Height * k; py++)
+            for (int px = 0; px < map.Width * k; px++)
+            {
+                float x = (px + .5f) / k, y = (py + .5f) / k, best = reach;
+                for (int ty = (int)y - 2; ty <= (int)y + 2; ty++)
+                    for (int tx = (int)x - 2; tx <= (int)x + 2; tx++)
+                    {
+                        if (!map.IsWall(tx, ty)) continue;
+                        float dx = Math.Max(Math.Max(tx - x, 0), x - (tx + 1)), dy = Math.Max(Math.Max(ty - y, 0), y - (ty + 1));
+                        best = Math.Min(best, MathF.Sqrt(dx * dx + dy * dy));
+                    }
+                image.SetPixel(px, py, new Color(best / reach, 0, 0));
+            }
+        return ImageTexture.CreateFromImage(image);
     }
 
     public static StandardMaterial3D Glow(Color color, float energy = 3f) => new()

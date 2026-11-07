@@ -20,3 +20,8 @@ foreach ($preset in 'baixo', 'medio', 'alto') {
     & $Godot --path $Game -- --preset $preset --bench (Join-Path $bench "$preset.json") --seconds $Seconds --warmup 3 2>&1 |
         Where-Object { $_ -match 'benchmark|ERROR' }
 }
+
+# Effects held mid-life (--fx), close camera
+foreach ($fx in 'golpe', 'ruptura', 'investida') {
+    & $Godot --path $Game -- --preset alto --ticks $Ticks --freeze --zoom 10 --fx $fx --shot (Join-Path $shots "vfx_$fx.png") --frames 8 2>&1 | Where-Object { $_ -match 'captura|ERROR' }
+}

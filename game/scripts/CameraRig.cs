@@ -18,6 +18,8 @@ public partial class CameraRig : Node3D
     public float ZoomPercent { get; private set; } = 30f;
 
     private Vector3 _focus;
+    private float _shake, _shakeTime;
+    public static bool ShakeEnabled = true;
     private float _yaw, _pitch = IsoPitch, _distance;
 
     public override void _Ready()
@@ -45,8 +47,13 @@ public partial class CameraRig : Node3D
         Apply();
     }
 
+    /// <summary>Short camera tremor on heavy impacts (presentation only; can be switched off for comfort).</summary>
+    public void Shake(float amount) { if (ShakeEnabled) _shake = Mathf.Max(_shake, amount); }
+
     public void Follow(Vector3 focus, double delta)
     {
+        _shakeTime += (float)delta;
+        _shake = Mathf.Max(0, _shake - (float)delta * 1.6f);
         float k = 1f - Mathf.Exp(-(float)delta * 9f);
         _focus = _focus.Lerp(focus, k);
         _yaw = Mathf.Lerp(_yaw, TargetYaw, k);
@@ -60,6 +67,7 @@ public partial class CameraRig : Node3D
         float yaw = Mathf.DegToRad(_yaw), pitch = Mathf.DegToRad(_pitch);
         var offset = new Vector3(Mathf.Sin(yaw) * Mathf.Cos(pitch), Mathf.Sin(pitch), Mathf.Cos(yaw) * Mathf.Cos(pitch)) * _distance;
         var target = _focus + new Vector3(0, .9f, 0);
+        if (_shake > 0) target += new Vector3(Mathf.Sin(_shakeTime * 71f), Mathf.Sin(_shakeTime * 53f) * .5f, Mathf.Cos(_shakeTime * 67f)) * _shake * _shake * 2.2f;
         Camera.GlobalPosition = target + offset;
         Camera.LookAt(target, Vector3.Up);
     }

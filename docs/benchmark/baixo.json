@@ -13,23 +13,41 @@
   "vsync": "Disabled",
   "aquecimento_s": 3,
   "duracao_s": 20,
-  "quadros": 1184,
-  "fps_medio": 59.1,
-  "fps_1pct_baixo": 29.8,
-  "quadro_ms_medio": 16.91,
-  "quadro_ms_p50": 16.67,
-  "quadro_ms_p99": 22.96,
-  "cpu_process_ms_medio": 30.51,
-  "cpu_render_ms_medio": 8.61,
+  "quadros": 950,
+  "fps_medio": 47.4,
+  "fps_1pct_baixo": 28.4,
+  "quadro_ms_medio": 21.08,
+  "quadro_ms_p50": 20.83,
+  "quadro_ms_p99": 30.03,
+  "cpu_process_ms_medio": 33.66,
+  "cpu_render_ms_medio": 12.11,
   "gpu_ms_medio": null,
-  "draw_calls_medio": 99,
-  "objetos_medio": 410,
-  "primitivas_medio": 25803,
-  "memoria_estatica_mb": 46.3,
+  "draw_calls_medio": 101,
+  "objetos_medio": 415,
+  "primitivas_medio": 10307,
+  "memoria_estatica_mb": 44.4,
   "nosso_codigo_ms_medio": {
-    "hud": 0.65,
-    "simulacao": 0.09,
-    "apresentacao": 0.18
+    "hud": 0.98,
+    "simulacao": 0.12,
+    "apresentacao": 0.32
+  },
+  "quadros_lentos_40ms": 1,
+  "eventos_nos_lentos": {
+    "(nada)": 1
+  },
+  "detalhe_lentos": [
+    "60 ms:  | hud=0,4 simulacao=0,0 apresentacao=0,2"
+  ],
+  "eventos_em_todos": {
+    "investida": 2,
+    "Telegraph": 12,
+    "Hit": 37,
+    "golpe_brutal": 33,
+    "Strike": 4,
+    "Died": 12,
+    "Dropped": 8,
+    "PickedUp": 8,
+    "recomeco": 2
   },
   "lutas_recomecadas": 2,
   "inimigos_restantes_no_fim": 6

@@ -33,8 +33,10 @@ public partial class Main : Node3D
         if (Options.Scale is { } scale) Preset = Preset with { Scale3D = scale };
         if (Options.Lights is { } lights) Preset = Preset with { MaxLights = lights, TorchShadows = Math.Min(Preset.TorchShadows, lights) };
         AddChild(Rig);
-        if (!LaunchOptions.Skip.Contains("fx")) AddChild(Fx);
+        AddChild(Fx);
+        if (LaunchOptions.Skip.Contains("fx")) Fx.ProcessMode = ProcessModeEnum.Disabled;
         AddChild(Actors);
+        AddChild(new PostProcess());
         AddChild(Hud);
         Hud.Visible = !Options.NoHud;
         AddChild(Pause);
@@ -66,11 +68,13 @@ public partial class Main : Node3D
         for (int i = 0; i < Options.FastForward; i++) Sim.Step(Autopilot.Next(Sim));
         World = new WorldView { Name = "Cripta" };
         AddChild(World);
-        World.Build(Sim.Map, Preset);
+        World.Build(Sim.Map, Preset, Options.Seed);
         Actors.Build(Sim);
         Hud.Bind(Sim, Rig, Actors);
         Quality.Apply(GetViewport(), World, Preset);
         Rig.Snap(ActorLayer.World(Sim.Hero.Position));
+        Actors.Prewarm();
+        Fx.Prewarm(ActorLayer.World(Sim.Hero.Position));
         _accumulator = 0;
     }
 
@@ -78,9 +82,10 @@ public partial class Main : Node3D
     private void RestartFight()
     {
         Sim = new Simulation(Options.Seed);
-        Actors.Build(Sim);
+        if (!Actors.Rebind(Sim)) Actors.Build(Sim);
         Hud.Bind(Sim, Rig, Actors);
         _bench!.Restarts++;
+        Profiler.Tags.Add("recomeco");
     }
 
     public void SetPreset(Quality.Preset preset)
@@ -122,6 +127,7 @@ public partial class Main : Node3D
         if (_bench != null && Sim.Cleared && Sim.Drops.Count == 0) RestartFight();
 
         _bench?.Frame(delta);
+        if (Options.Fx != null && _frames == 2) { Effects.Hold = .35f; Showcase(Options.Fx); }
         if (Options.Shot != null && _frames == Options.ShotFrames)
         {
             var image = GetViewport().GetTexture().GetImage();
@@ -147,24 +153,38 @@ public partial class Main : Node3D
         World.Tick(delta, hero, Rig.Camera.GlobalPosition);
     }
 
+    /// <summary>Screenshots of effects: plays one skill's visuals toward the nearest enemy, without touching the rules.</summary>
+    private void Showcase(string fx)
+    {
+        var hero = Sim.Hero;
+        var target = Sim.Enemies.Where(e => e.Alive).OrderBy(e => NVec.Distance(e.Position, hero.Position)).FirstOrDefault();
+        var dir = target == null ? hero.Facing : NVec.Normalize(target.Position - hero.Position);
+        string id = fx switch { "golpe" => SliceData.GolpeBrutal.Id, "ruptura" => SliceData.Ruptura.Id, "investida" => SliceData.Investida.Id, _ => "" };
+        if (id != "") Dispatch(new SkillEvent(id, hero.Position, dir));
+        if (target != null) Dispatch(new HitEvent(target.Id, 29, target.Position, false));
+    }
+
     private void Dispatch(GameEvent e)
     {
+        Profiler.Tags.Add(e is SkillEvent sk ? sk.SkillId.Replace("barb2_", "") : e.GetType().Name.Replace("Event", ""));
         Hud.OnEvent(e);
         switch (e)
         {
             case HitEvent hit:
                 Actors.OnHit(hit.TargetId);
-                Fx.Burst(ActorLayer.World(hit.Position, 1f), hit.OnHero ? Materials.Rgb(220, 60, 50) : Materials.Rgb(255, 190, 120));
+                Fx.Impact(ActorLayer.World(hit.Position, 1f), hit.OnHero);
+                if (hit.OnHero) Rig.Shake(.16f);
                 break;
             case DiedEvent died:
                 Actors.OnDied(died.ActorId);
-                Fx.Burst(ActorLayer.World(died.Position, .3f), Materials.Rgb(120, 110, 100), 26, .6f);
+                Fx.Death(ActorLayer.World(died.Position));
                 break;
             case StrikeEvent strike: Actors.OnStrike(strike.EnemyId); break;
             case SkillEvent skill:
                 var at = ActorLayer.World(skill.Position); var dir = new Vector3(skill.Direction.X, 0, skill.Direction.Y);
                 if (skill.SkillId == SliceData.GolpeBrutal.Id) Fx.Swing(at, dir, SliceData.GolpeBrutal.Range + .35f, SliceData.GolpeBrutal.ArcDegrees);
-                else if (skill.SkillId == SliceData.Ruptura.Id) Fx.Cone(at, dir, SliceData.Ruptura.Range + .35f, SliceData.Ruptura.ArcDegrees);
+                else if (skill.SkillId == SliceData.Ruptura.Id) { Fx.Cone(at, dir, SliceData.Ruptura.Range + .35f, SliceData.Ruptura.ArcDegrees); Rig.Shake(.22f); }
+                else if (skill.SkillId == SliceData.Investida.Id) { Fx.Dash(at); Rig.Shake(.08f); }
                 break;
             case DroppedEvent dropped: Actors.AddDrop(dropped.Drop); break;
             case PickedUpEvent picked:

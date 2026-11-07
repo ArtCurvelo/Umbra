@@ -30,9 +30,9 @@ public partial class WorldView : Node3D
         public float Phase;
     }
 
-    public void Build(DungeonMap map, Quality.Preset preset)
+    public void Build(DungeonMap map, Quality.Preset preset, ulong seed)
     {
-        var floor = Materials.Floor();
+        var floor = Materials.Floor(map);
         _wall = Materials.Wall();
         _wall.SetShaderParameter("wall_height", WallHeight);
         var floorMesh = new BoxMesh { Size = new Vector3(1, .2f, 1), Material = floor };
@@ -44,6 +44,7 @@ public partial class WorldView : Node3D
             AddChild(Instanced(wallMesh, group.Select(c => new Vector3(c.X + .5f, WallHeight / 2, c.Y + .5f)).ToList(), "Parede"));
 
         if (!LaunchOptions.Skip.Contains("torches")) foreach (var (x, y) in map.Torches) AddTorch(map, x, y, preset);
+        if (!LaunchOptions.Skip.Contains("props")) AddChild(Props.Build(map, seed, _wall, map.Torches.ToHashSet()));
 
         Moon.LightColor = new Color(.55f, .62f, .85f);
         Moon.LightEnergy = .22f;
@@ -78,8 +79,8 @@ public partial class WorldView : Node3D
         var root = new Node3D { Position = new Vector3(x + .5f, 0, y + .5f) + face * .56f, Name = "Tocha" };
         root.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(.12f, .5f, .12f), Material = Materials.Metal(Materials.Rgb(60, 52, 46)) },
                                            Position = new Vector3(0, 1.45f, 0) - face * .05f, RotationDegrees = new Vector3(dy * 18, 0, -dx * 18) });
-        var flame = new MeshInstance3D { Mesh = new SphereMesh { Radius = .09f, Height = .26f, Material = Materials.Glow(new Color(1f, .62f, .25f), 4f) },
-                                         Position = new Vector3(0, 1.78f, 0) + face * .07f };
+        var flame = Props.Flame();
+        flame.Position = new Vector3(0, 1.86f, 0) + face * .07f;
         root.AddChild(flame);
         var light = new OmniLight3D
         {
@@ -139,7 +140,7 @@ public partial class WorldView : Node3D
             float t = _time * 7f + torch.Phase;
             float flicker = .86f + .08f * Mathf.Sin(t) + .06f * Mathf.Sin(t * 2.3f + 1.7f);
             torch.Light.LightEnergy = 1.9f * flicker;
-            torch.Flame.Scale = new Vector3(1, .9f + .2f * flicker, 1);
+            torch.Flame.Scale = new Vector3(.9f + .15f * Mathf.Sin(t * 1.7f), .8f + .35f * flicker, 1);
         }
         _wall.SetShaderParameter("hero_position", hero);
         _wall.SetShaderParameter("camera_position", camera);

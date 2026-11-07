@@ -18,8 +18,10 @@ public partial class Hud : CanvasLayer
     private Simulation _sim = null!;
     private CameraRig _camera = null!;
     private ActorLayer _actors = null!;
-    private readonly Canvas _canvas = new(), _overlay = new() { Overlay = true };
-    private string _signature = "";
+    // One canvas per part: each is redrawn only when what it shows changes (text drawing is the HUD's cost).
+    private readonly Canvas _overlay = new() { Part = "mundo" }, _objective = new() { Part = "objetivo" },
+                            _loot = new() { Part = "itens" }, _bottom = new() { Part = "painel" }, _banner = new() { Part = "faixa" };
+    private readonly Dictionary<string, string> _signatures = new();
     private float _time;
 
     public string ObjectiveText { get; private set; } = "";
@@ -28,18 +30,26 @@ public partial class Hud : CanvasLayer
     private partial class Canvas : Control
     {
         public Hud Host = null!;
-        public bool Overlay;
+        public string Part = "";
         public override void _Draw()
         {
+            if (Host._sim == null) return;
             double t = Profiler.Now;
-            if (Overlay) Host.DrawWorldOverlay(this); else Host.DrawPanels(this);
+            switch (Part)
+            {
+                case "mundo": Host.DrawWorldOverlay(this); break;
+                case "objetivo": Host.DrawObjective(this); break;
+                case "itens": Host.DrawLoot(this, Size); break;
+                case "painel": Host.DrawBottom(this, Size); break;
+                default: Host.DrawBanner(this, Size); break;
+            }
             Profiler.Add("hud", t);
         }
     }
 
     public override void _Ready()
     {
-        foreach (var c in new[] { _overlay, _canvas })
+        foreach (var c in new[] { _overlay, _objective, _loot, _bottom, _banner })
         {
             c.Host = this;
             c.SetAnchorsPreset(Control.LayoutPreset.FullRect);
@@ -80,35 +90,27 @@ public partial class Hud : CanvasLayer
             if (_sim.Cleared && _sim.Drops.Count == 0 && Banner == "") Banner = "clear";
         }
         _overlay.QueueRedraw();
-        string signature = Signature();
-        if (signature != _signature) { _signature = signature; _canvas.QueueRedraw(); }
+        if (_sim == null) return;
+        var h = _sim.Hero;
+        string size = _bottom.Size.ToString();
+        Redraw(_objective, ObjectiveText + size);
+        Redraw(_loot, _toasts.Count + "|" + string.Join(',', _toasts.Select(t => (int)Math.Min(90, (_time - t.Born) * 10) is var a && a >= 70 ? a : 0)) + size);
+        Redraw(_bottom, $"{h.Health}|{h.Fury}|{h.Cooldown(SliceData.Investida.Id) / 6}|{DeviceTracker.Current}|{size}");
+        Redraw(_banner, Banner + DeviceTracker.Current + size);
     }
 
-    /// <summary>Everything the panels show; they are redrawn only when it changes (text drawing is the HUD's cost).</summary>
-    private string Signature()
+    private void Redraw(Canvas canvas, string signature)
     {
-        if (_sim == null) return "";
-        var h = _sim.Hero;
-        var toasts = string.Join(',', _toasts.Select(t => (int)Math.Min(90, (_time - t.Born) * 10) is var a && a >= 70 ? a : 0));
-        return $"{h.Health}|{h.Fury}|{h.Cooldown(SliceData.Investida.Id) / 6}|{ObjectiveText}|{Banner}|{DeviceTracker.Current}|{_toasts.Count}|{toasts}|{_canvas.Size}";
+        if (_signatures.TryGetValue(canvas.Part, out var old) && old == signature) return;
+        _signatures[canvas.Part] = signature;
+        canvas.QueueRedraw();
     }
 
     private Vector2 Screen(Vector3 world) => _camera.Camera.UnprojectPosition(world);
     private bool OnScreen(Vector3 world) => !_camera.Camera.IsPositionBehind(world);
 
-    private void DrawPanels(Control c)
-    {
-        if (_sim == null) return;
-        var size = c.Size;
-        DrawObjective(c);
-        DrawLoot(c, size);
-        DrawBottom(c, size);
-        DrawBanner(c, size);
-    }
-
     private void DrawWorldOverlay(Control c)
     {
-        if (_sim == null) return;
         foreach (var e in _sim.Enemies)
         {
             if (!e.Alive || e.Health == e.Stats.MaxHealth) continue;

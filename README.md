@@ -39,5 +39,6 @@ Os ícones dos botões no HUD mudam conforme o último dispositivo usado (teclad
 ## Opções de linha de comando (depois de `--`)
 `--seed N`, `--preset baixo|medio|alto`, `--camera iso|top`, `--yaw N`, `--zoom P`, `--autopilot`, `--ticks N`, `--freeze`,
 `--shot arquivo.png --frames N`, `--bench arquivo.json --seconds S --warmup W`, `--selftest`.
-Diagnóstico: `--nohud`, `--scale X`, `--lights N`, `--skip partes` (torches, walls, floor, enemies, env, hero, fx, moon,
-scaling, msaa, torchshadows, glow, moonshadow, measure).
+Capturas de efeitos: `--fx golpe|ruptura|investida` (segura o efeito a 35% da vida). Guia visual: [docs/GUIA_VISUAL.md](docs/GUIA_VISUAL.md).
+Diagnóstico: `--nohud`, `--scale X`, `--lights N`, `--skip partes` (torches, walls, floor, props, enemies, env, hero, herolight, fx, moon,
+scaling, msaa, torchshadows, glow, moonshadow, post, measure).
