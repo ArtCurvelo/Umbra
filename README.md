@@ -18,7 +18,7 @@ docs/                     relatório, capturas de tela, resultados de benchmark
 powershell -ExecutionPolicy Bypass -File tools\jogar.ps1 -Preset baixo     # jogar
 powershell -ExecutionPolicy Bypass -File tools\check.ps1                   # testes do domínio + build + autoteste do Godot
 powershell -ExecutionPolicy Bypass -File tools\evidence.ps1                # capturas dos presets e benchmark (abre janela)
-powershell -ExecutionPolicy Bypass -File tools	elas.ps1                   # capturas das telas (menu, configurações, inventário, árvore)
+powershell -ExecutionPolicy Bypass -File tools\telas.ps1                   # capturas das telas (menu, configurações, inventário, árvore)
 ```
 Para editar no Godot, abra `game/project.godot`. Os scripts `.cs` abrem no VS Code, que está configurado como editor externo.
 
@@ -38,7 +38,7 @@ Para editar no Godot, abra `game/project.godot`. Os scripts `.cs` abrem no VS Co
 | Pausa | Esc | Start |
 
 Os ícones dos botões no HUD mudam conforme o último dispositivo usado (teclado, Xbox ou PlayStation). Tudo pode ser remapeado em
-Configurações > Controles; as configurações ficam em `user://configuracoes.json` (no Windows: `%APPDATA%\Godotpp_userdata\`).
+Configurações > Controles; as configurações ficam em `user://configuracoes.json` (no Windows: `%APPDATA%\Godot\app_userdata\UMBRA — vertical slice\`).
 O jogo abre no menu principal.
 
 ## Opções de linha de comando (depois de `--`)
