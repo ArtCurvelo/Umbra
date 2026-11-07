@@ -9,7 +9,31 @@ namespace Umbra.Game;
 public static class UiKit
 {
     public static readonly Color Fill = Materials.Rgb(16, 14, 18, 236 / 255f);
-    public static Font Font => ThemeDB.FallbackFont;
+    private static Font? _pixel;
+
+    /// <summary>UMBRA Pixel (assets/fonts/umbra_pixel.fnt, exported by tools/export_umbra_pixel.py from the Python game's
+    /// own glyphs). Drawn only at whole multiples of 11 px, without smoothing, so every pixel is crisp.</summary>
+    public static Font Font => _pixel ??= LoadPixel();
+
+    private static Font LoadPixel()
+    {
+        var font = new FontFile();
+        if (font.LoadBitmapFont("res://assets/fonts/umbra_pixel.fnt") != Error.Ok) return ThemeDB.FallbackFont;
+        font.FixedSizeScaleMode = TextServer.FixedSizeScaleMode.IntegerOnly;
+        font.Antialiasing = TextServer.FontAntialiasing.None;
+        return font;
+    }
+
+    /// <summary>Nominal text sizes snap to the font's integer scales: small 11 px, normal 22 px, title 33 px.</summary>
+    public static int Px(int size) => size <= 12 ? 11 : size <= 27 ? 22 : size <= 38 ? 33 : size <= 49 ? 44 : size <= 60 ? 55 : 66;
+
+    /// <summary>Baseline that centres a line of UMBRA Pixel (cap height rows 2..8 of 11) in a box.</summary>
+    public static float Baseline(Rect2 box, int size) { int px = Px(size); return box.Position.Y + (box.Size.Y - px) / 2f + px * 9f / 11f; }
+
+    public static void TextIn(CanvasItem c, string text, Rect2 box, int size, Color color, HorizontalAlignment align = HorizontalAlignment.Center, float inset = 0)
+        => Text(c, text, new Vector2(box.Position.X + inset, Baseline(box, size)), size, color, align, box.Size.X - inset * 2);
+
+    public static float Measure(string text, int size) => Font.GetStringSize(text, HorizontalAlignment.Left, -1, Px(size)).X;
 
     public static void Frame(CanvasItem c, Rect2 r, Color? corner = null)
     {
@@ -27,9 +51,10 @@ public static class UiKit
 
     public static void Text(CanvasItem c, string text, Vector2 at, int size, Color color, HorizontalAlignment align = HorizontalAlignment.Left, float width = -1)
     {
-        var shadow = new Color(0, 0, 0, .8f * color.A);
-        c.DrawString(Font, at + new Vector2(1, 1), text, align, width, size, shadow);
-        c.DrawString(Font, at, text, align, width, size, color);
+        int px = Px(size); float step = px / 11f;
+        var shadow = new Color(.05f, .04f, .055f, .9f * color.A);
+        c.DrawString(Font, at + new Vector2(step, step), text, align, width, px, shadow);
+        c.DrawString(Font, at, text, align, width, px, color);
     }
 
     /// <summary>Bar with an iron rim; the share drawn is value/max. Text centred on it.</summary>
@@ -42,7 +67,7 @@ public static class UiKit
         var fill = new Rect2(r.Position, new Vector2(r.Size.X * share, r.Size.Y));
         c.DrawRect(fill, color.Darkened(.25f));
         c.DrawRect(new Rect2(fill.Position, new Vector2(fill.Size.X, r.Size.Y * .45f)), color);
-        Text(c, label, new Vector2(r.Position.X, r.Position.Y + r.Size.Y * .5f + 6), 15, Materials.Bone, HorizontalAlignment.Center, r.Size.X);
+        TextIn(c, label, r, 22, Materials.Bone);
     }
 
     /// <summary>Button prompt for the device in use: keycap, mouse button, Xbox letter or PlayStation shape.</summary>
@@ -59,10 +84,10 @@ public static class UiKit
                 c.DrawLine(body.Position + new Vector2(0, 9), body.Position + new Vector2(16, 9), Materials.Ash, 1);
                 return;
             }
-            float w = Mathf.Max(22, key.Length * 9 + 10);
+            float w = Mathf.Max(22, Measure(key, 11) + 10);
             var cap = new Rect2(center - new Vector2(w / 2, 11), new Vector2(w, 22));
             c.DrawRect(cap, Materials.Rgb(30, 28, 32)); c.DrawRect(cap, Materials.Ash, false, 1.5f);
-            Text(c, key, new Vector2(cap.Position.X, center.Y + 5), 13, Materials.Bone, HorizontalAlignment.Center, w);
+            TextIn(c, key, cap, 11, Materials.Bone);
             return;
         }
         if (device == Device.Xbox)
@@ -70,7 +95,7 @@ public static class UiKit
             var color = xbox switch { "A" => Materials.Rgb(96, 176, 72), "B" => Materials.Rgb(200, 64, 56), "X" => Materials.Rgb(64, 120, 210), "Y" => Materials.Rgb(220, 180, 60), _ => Materials.Ash };
             c.DrawCircle(center, radius, Materials.Rgb(24, 22, 26));
             c.DrawArc(center, radius, 0, Mathf.Tau, 24, color, 2);
-            Text(c, xbox, new Vector2(center.X - radius, center.Y + 5), 14, color, HorizontalAlignment.Center, radius * 2);
+            TextIn(c, xbox, new Rect2(center - new Vector2(radius, radius), new Vector2(radius * 2, radius * 2)), 11, color);
             return;
         }
         // PlayStation: A=cross, B=circle, X=square, Y=triangle, drawn as shapes (no font glyph needed)

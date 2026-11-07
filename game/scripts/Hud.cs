@@ -127,11 +127,11 @@ public partial class Hud : CanvasLayer
             if (!OnScreen(w)) continue;
             var p = Screen(w);
             string label = $"[{d.Item.Tag}] {d.Item.Name}";
-            float width = UiKit.Font.GetStringSize(label, HorizontalAlignment.Left, -1, 14).X + 14;
-            var r = new Rect2(p - new Vector2(width / 2, 26), new Vector2(width, 22));
+            float width = UiKit.Measure(label, 14) + 14;
+            var r = new Rect2(p - new Vector2(width / 2, 34), new Vector2(width, 30));
             c.DrawRect(r, new Color(0, 0, 0, .72f));
-            c.DrawRect(r, Materials.Rarity(d.Item.Rarity), false, 1);
-            UiKit.Text(c, label, new Vector2(r.Position.X, r.Position.Y + 16), 14, Materials.Rarity(d.Item.Rarity), HorizontalAlignment.Center, width);
+            c.DrawRect(r, Materials.Rarity(d.Item.Rarity), false, 2);
+            UiKit.TextIn(c, label, r, 14, Materials.Rarity(d.Item.Rarity));
         }
         foreach (var f in _floaters)
         {
@@ -145,10 +145,11 @@ public partial class Hud : CanvasLayer
 
     private void DrawObjective(Control c)
     {
-        var r = new Rect2(16, 16, 330, 62);
+        float width = Mathf.Max(330, UiKit.Measure(ObjectiveText, 22) + 36);
+        var r = new Rect2(16, 16, width, 78);
         UiKit.Frame(c, r);
-        UiKit.Text(c, "CRIPTA ESQUECIDA", new Vector2(30, 40), 16, Materials.Gold);
-        UiKit.Text(c, ObjectiveText, new Vector2(30, 64), 14, Materials.Bone);
+        UiKit.TextIn(c, "CRIPTA ESQUECIDA", new Rect2(r.Position + new Vector2(0, 8), new Vector2(r.Size.X, 28)), 22, Materials.Gold, HorizontalAlignment.Left, 18);
+        UiKit.TextIn(c, ObjectiveText, new Rect2(r.Position + new Vector2(0, 38), new Vector2(r.Size.X, 28)), 22, Materials.Bone, HorizontalAlignment.Left, 18);
     }
 
     private void DrawLoot(Control c, Vector2 size)
@@ -160,12 +161,12 @@ public partial class Hud : CanvasLayer
             if (age > 8) continue;
             var color = new Color(Materials.Rarity(t.Item.Rarity), Mathf.Clamp(8 - age, 0, 1));
             string text = $"[{t.Item.Tag}] {t.Item.Name} — {t.Item.RarityName}";
-            float width = UiKit.Font.GetStringSize(text, HorizontalAlignment.Left, -1, 14).X + 24;
-            var r = new Rect2(size.X - width - 16, y, width, 26);
+            float width = UiKit.Measure(text, 22) + 24;
+            var r = new Rect2(size.X - width - 16, y, width, 32);
             c.DrawRect(r, new Color(UiKit.Fill, .85f * color.A));
             c.DrawRect(new Rect2(r.Position, new Vector2(4, r.Size.Y)), color);
-            UiKit.Text(c, text, new Vector2(r.Position.X + 12, y + 18), 14, color);
-            y += 30;
+            UiKit.TextIn(c, text, r, 22, color, HorizontalAlignment.Left, 12);
+            y += 36;
         }
     }
 
@@ -174,7 +175,7 @@ public partial class Hud : CanvasLayer
         var hero = _sim.Hero;
         var panel = new Rect2(size.X / 2 - 300, size.Y - 112, 600, 96);
         UiKit.Frame(c, panel);
-        var bars = new Rect2(panel.Position + new Vector2(18, 18), new Vector2(300, 24));
+        var bars = new Rect2(panel.Position + new Vector2(18, 16), new Vector2(300, 26));
         UiKit.Bar(c, bars, hero.Health, hero.Stats.MaxHealth, Materials.Blood, $"VIDA  {hero.Health}/{hero.Stats.MaxHealth}");
         UiKit.Bar(c, new Rect2(bars.Position + new Vector2(0, 38), bars.Size), hero.Fury, SliceData.FuryMax, Materials.Ember, $"FÚRIA  {hero.Fury}/{SliceData.FuryMax}");
 
@@ -198,11 +199,11 @@ public partial class Hud : CanvasLayer
             {
                 float share = cd / (float)skill.CooldownTicks;
                 c.DrawRect(new Rect2(r.Position, new Vector2(r.Size.X, r.Size.Y * share)), new Color(0, 0, 0, .66f));
-                UiKit.Text(c, $"{cd / 60f:0.0}", new Vector2(r.Position.X, r.Position.Y + 40), 18, Materials.Bone, HorizontalAlignment.Center, r.Size.X);
+                UiKit.TextIn(c, $"{cd / 60f:0.0}", r, 22, Materials.Bone);
             }
             else if (!ready) c.DrawRect(r, new Color(.1f, 0, 0, .45f));
             c.DrawRect(r, ready ? Materials.Gold : Materials.Iron, false, 2);
-            if (skill.Cost > 0) UiKit.Text(c, skill.Cost.ToString(), r.Position + new Vector2(44, 60), 12, Materials.Ember);
+            if (skill.Cost > 0) UiKit.Text(c, skill.Cost.ToString(), r.Position + new Vector2(46, 60), 11, Materials.Ember);
             UiKit.Prompt(c, new Vector2(r.Position.X + r.Size.X - 4, r.Position.Y + 4), device, key, pad, 10);
             UiKit.Text(c, skill.Name, new Vector2(r.Position.X - 10, r.End.Y + 14), 11, Materials.Ash, HorizontalAlignment.Center, r.Size.X + 20);
         }
@@ -239,9 +240,9 @@ public partial class Hud : CanvasLayer
         bool dead = Banner == "dead";
         var r = new Rect2(size.X / 2 - 220, size.Y * .32f, 440, 92);
         UiKit.Frame(c, r, dead ? Materials.Blood : Materials.Gold);
-        UiKit.Text(c, dead ? "VOCÊ CAIU" : "CRIPTA LIMPA", new Vector2(r.Position.X, r.Position.Y + 42), 28, dead ? Materials.Rgb(230, 90, 80) : Materials.Gold,
-                   HorizontalAlignment.Center, r.Size.X);
+        UiKit.TextIn(c, dead ? "VOCÊ CAIU" : "CRIPTA LIMPA", new Rect2(r.Position + new Vector2(0, 10), new Vector2(r.Size.X, 44)), 33,
+                     dead ? Materials.Rgb(230, 90, 80) : Materials.Gold);
         string hint = DeviceTracker.Current == Device.Keyboard ? "Enter: recomeçar" : "A / Cruz: recomeçar";
-        UiKit.Text(c, hint, new Vector2(r.Position.X, r.Position.Y + 72), 14, Materials.Ash, HorizontalAlignment.Center, r.Size.X);
+        UiKit.TextIn(c, hint, new Rect2(r.Position + new Vector2(0, 56), new Vector2(r.Size.X, 28)), 22, Materials.Ash);
     }
 }

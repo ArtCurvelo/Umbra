@@ -1,0 +1,17 @@
+[remap]
+
+importer="font_data_bmfont"
+type="FontFile"
+uid="uid://c4i1cu48k4110"
+path="res://.godot/imported/umbra_pixel.fnt-762e3ace73667d79740f284046d6896f.fontdata"
+
+[deps]
+
+source_file="res://assets/fonts/umbra_pixel.fnt"
+dest_files=["res://.godot/imported/umbra_pixel.fnt-762e3ace73667d79740f284046d6896f.fontdata"]
+
+[params]
+
+fallbacks=[]
+compress=true
+scaling_mode=2

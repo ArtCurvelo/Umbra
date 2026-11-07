@@ -79,3 +79,6 @@ Ajustes finos com a sua avaliação (brilho geral, rastro do golpe, cenário no 
    - **Texturas PBR CC0** (domínio público, sem custo) para pedra, madeira e metal, por exemplo da Poly Haven ou da ambientCG. Elas substituem as texturas procedurais e mantêm o guia.
    - **Personagens com esqueleto e animação:** produção própria em Blender (lenta), pacotes CC0 genéricos (rápido, mas de estilo genérico) ou arte encomendada (custo). Recomendo começar pelo CC0 só para validar a técnica de animação e decidir a arte final depois.
 4. **Baixo:** desligar o cenário miúdo para voltar a cerca de 55–60 FPS, ou manter como está?
+
+## Aprovação
+Direção visual aprovada pelo diretor criativo em 2026-11-07 ("Aprovo, siga"). Ficaram em aberto: brilho, cenário miúdo no Baixo e texturas CC0 (sem resposta = nada muda).

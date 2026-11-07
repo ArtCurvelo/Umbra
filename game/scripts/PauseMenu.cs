@@ -29,9 +29,8 @@ public partial class PauseMenu : CanvasLayer
             DrawRect(new Rect2(Vector2.Zero, Size), new Color(0, 0, 0, .55f));
             var r = new Rect2(Size / 2 - new Vector2(210, 190), new Vector2(420, 380));
             UiKit.Frame(this, r);
-            UiKit.Text(this, "PAUSA", new Vector2(r.Position.X, r.Position.Y + 46), 28, Materials.Gold, HorizontalAlignment.Center, r.Size.X);
-            UiKit.Text(this, "Setas ou direcional: navegar  ·  Enter ou A: confirmar  ·  Esc ou B: voltar", new Vector2(r.Position.X, r.End.Y - 20), 12, Materials.Ash,
-                       HorizontalAlignment.Center, r.Size.X);
+            UiKit.TextIn(this, "PAUSA", new Rect2(r.Position + new Vector2(0, 16), new Vector2(r.Size.X, 44)), 33, Materials.Gold);
+            UiKit.TextIn(this, "Setas ou direcional: navegar   Enter ou A: confirmar   Esc ou B: voltar", new Rect2(r.Position.X, r.End.Y - 34, r.Size.X, 24), 11, Materials.Ash);
         }
     }
 
@@ -78,7 +77,7 @@ public partial class PauseMenu : CanvasLayer
         b.AddThemeColorOverride("font_color", Materials.Ash);
         b.AddThemeColorOverride("font_hover_color", Materials.Bone);
         b.AddThemeColorOverride("font_focus_color", Materials.Bone);
-        b.AddThemeFontSizeOverride("font_size", 18);
+        b.AddThemeFontSizeOverride("font_size", 22);
         b.Alignment = HorizontalAlignment.Left;
         return b;
     }

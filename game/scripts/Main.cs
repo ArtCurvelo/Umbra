@@ -29,6 +29,8 @@ public partial class Main : Node3D
     {
         Options = LaunchOptions.Parse(OS.GetCmdlineUserArgs());
         Bindings.Install();
+        ThemeDB.FallbackFont = UiKit.Font;          // every Control (buttons, labels) uses UMBRA Pixel
+        ThemeDB.FallbackFontSize = 22;
         Preset = Quality.ById(Options.Preset);
         if (Options.Scale is { } scale) Preset = Preset with { Scale3D = scale };
         if (Options.Lights is { } lights) Preset = Preset with { MaxLights = lights, TorchShadows = Math.Min(Preset.TorchShadows, lights) };
@@ -40,6 +42,7 @@ public partial class Main : Node3D
         AddChild(Hud);
         Hud.Visible = !Options.NoHud;
         AddChild(Pause);
+        if (Options.Mockup != null) { Hud.Visible = false; AddChild(new Mockups(Options.Mockup)); }
         Pause.Setup(() => Rig.TopDown ? "Top-down" : "Isométrica", () => Preset.Name);
         Pause.CameraToggled += () => Rig.ToggleMode();
         Pause.QualityCycled += () => SetPreset(Quality.Next(Preset));
@@ -55,7 +58,7 @@ public partial class Main : Node3D
         if (Options.SelfTest) AddChild(new SelfTestDriver { Test = new SelfTest(this) });
         if (Options.Shot != null || Options.Bench != null)
         {
-            DisplayServer.WindowSetSize(new Vector2I(1280, 720));
+            DisplayServer.WindowSetSize(Options.Size);
             DisplayServer.WindowSetVsyncMode(DisplayServer.VSyncMode.Disabled);
             Engine.MaxFps = 0;
         }
