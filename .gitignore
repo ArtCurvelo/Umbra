@@ -1,0 +1,7 @@
+# Godot
+game/.godot/
+# .NET
+bin/
+obj/
+*.user
+.vs/

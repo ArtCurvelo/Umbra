@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/game/">
+    <Project Path="game/Umbra.Game.csproj">
+      <BuildType Project="Debug" />
+    </Project>
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Umbra.Domain/Umbra.Domain.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Umbra.Domain.Tests/Umbra.Domain.Tests.csproj" />
+  </Folder>
+</Solution>
