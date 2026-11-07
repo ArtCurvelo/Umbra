@@ -21,7 +21,9 @@ public sealed class Simulation
     public Hero Hero { get; }
     public List<Enemy> Enemies { get; } = new();
     public List<Drop> Drops { get; } = new();
+    public const int BagSize = 30;
     public List<Item> Inventory { get; } = new();
+    public bool BagFull => Inventory.Count >= BagSize;
     public List<GameEvent> Events { get; } = new();
     public int Tick { get; private set; }
 
@@ -160,7 +162,7 @@ public sealed class Simulation
 
     private void Hit(Enemy enemy, SkillDef skill)
     {
-        int amount = SliceData.Damage(Hero.Stats.Attack, skill.Multiplier, enemy.Stats.Defense);
+        int amount = SliceData.Damage(Hero.Attack, skill.Multiplier * Hero.Ranks.Factor(skill.Id), enemy.Stats.Defense);
         enemy.Health = Math.Max(0, enemy.Health - amount);
         enemy.LastHitTick = Tick;
         if (enemy.State == AiState.Idle) enemy.State = AiState.Chase;
@@ -175,6 +177,41 @@ public sealed class Simulation
             Events.Add(new DroppedEvent(drop));
         }
     }
+
+    // ---------------------------------------------------------------- inventory (called by the interface while paused)
+
+    /// <summary>Equips the bag item at <paramref name="index"/>; whatever was in that slot takes its place in the bag.</summary>
+    public bool Equip(int index)
+    {
+        if (index < 0 || index >= Inventory.Count) return false;
+        var item = Inventory[index];
+        if (Hero.Equipment.TargetFor(item) is not { } slot) return false;
+        var old = Hero.Equipment.Put(slot, item);
+        if (old != null) Inventory[index] = old; else Inventory.RemoveAt(index);
+        ClampHealth();
+        return true;
+    }
+
+    public bool Unequip(EquipSlot slot)
+    {
+        if (BagFull || Hero.Equipment[slot] == null) return false;
+        Inventory.Add(Hero.Equipment.Take(slot)!);
+        ClampHealth();
+        return true;
+    }
+
+    /// <summary>Drops a bag item at the hero's feet (nothing is destroyed; it can be picked up again).</summary>
+    public bool Discard(int index)
+    {
+        if (index < 0 || index >= Inventory.Count) return false;
+        var drop = new Drop(_nextId++, Inventory[index], Hero.Position + Hero.Facing * .9f);
+        Inventory.RemoveAt(index);
+        Drops.Add(drop);
+        Events.Add(new DroppedEvent(drop));
+        return true;
+    }
+
+    private void ClampHealth() => Hero.Health = Math.Min(Hero.Health, Hero.MaxHealth);
 
     // ---------------------------------------------------------------- enemies
 
@@ -207,7 +244,7 @@ public sealed class Simulation
                               && (to.Length() < 1e-3f || Vector2.Dot(Vector2.Normalize(to), enemy.Facing) >= .5f);
                 if (landed)
                 {
-                    int amount = SliceData.Damage(enemy.Stats.Attack, 1f, Hero.Stats.Defense);
+                    int amount = SliceData.Damage(enemy.Stats.Attack, 1f, Hero.Defense);
                     Hero.Health = Math.Max(0, Hero.Health - amount);
                     Events.Add(new HitEvent(Hero.Id, amount, Hero.Position, true));
                     if (!Hero.Alive) Events.Add(new HeroDiedEvent());
@@ -247,7 +284,7 @@ public sealed class Simulation
         for (int i = Drops.Count - 1; i >= 0; i--)
         {
             var drop = Drops[i];
-            if (Vector2.Distance(drop.Position, Hero.Position) > Hero.Radius + .45f) continue;
+            if (Vector2.Distance(drop.Position, Hero.Position) > Hero.Radius + .45f || BagFull) continue;
             Drops.RemoveAt(i); Inventory.Add(drop.Item);
             Events.Add(new PickedUpEvent(drop));
         }

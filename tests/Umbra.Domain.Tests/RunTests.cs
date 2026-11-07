@@ -41,7 +41,7 @@ public class RunTests
         Assert.True(sim.Cleared, $"{sim.EnemiesRemaining} enemies left after {ticks} ticks");
         Assert.Empty(sim.Drops);
         Assert.NotEmpty(sim.Inventory);                            // the last kill always drops when nothing did before
-        Assert.True(sim.Hero.Health < sim.Hero.Stats.MaxHealth);   // the brutes fight back
+        Assert.True(sim.Hero.Health < sim.Hero.MaxHealth);   // the brutes fight back
     }
 
     [Fact]

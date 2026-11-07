@@ -1,5 +1,6 @@
 using Godot;
 using Umbra.Domain.Gameplay;
+using Umbra.Game.Ui;
 using NVec = System.Numerics.Vector2;
 
 namespace Umbra.Game;
@@ -16,7 +17,11 @@ public partial class Main : Node3D
     public ActorLayer Actors { get; } = new();
     public CameraRig Rig { get; } = new();
     public Hud Hud { get; } = new();
-    public PauseMenu Pause { get; } = new();
+    public ScreenStack Screens { get; } = new();
+    /// <summary>A crypt run the player started (the main menu's Continuar).</summary>
+    public bool RunInProgress { get; set; }
+    /// <summary>Screenshots, benchmark, self-test: never read or write the player's settings.</summary>
+    public bool ToolRun => Options.Shot != null || Options.Bench != null || Options.SelfTest;
     public Effects Fx { get; } = new();
     public Quality.Preset Preset { get; private set; } = Quality.Medio;
 
@@ -31,7 +36,10 @@ public partial class Main : Node3D
         Bindings.Install();
         ThemeDB.FallbackFont = UiKit.Font;          // every Control (buttons, labels) uses UMBRA Pixel
         ThemeDB.FallbackFontSize = 22;
-        Preset = Quality.ById(Options.Preset);
+        Settings.Load(persistent: !ToolRun);
+        if (ToolRun) Settings.Current.UsePreset(Options.Preset);
+        else Bindings.ApplySaved(Settings.Current.Bindings);
+        Preset = Settings.Current.Effective();
         if (Options.Scale is { } scale) Preset = Preset with { Scale3D = scale };
         if (Options.Lights is { } lights) Preset = Preset with { MaxLights = lights, TorchShadows = Math.Min(Preset.TorchShadows, lights) };
         AddChild(Rig);
@@ -41,20 +49,20 @@ public partial class Main : Node3D
         AddChild(new PostProcess());
         AddChild(Hud);
         Hud.Visible = !Options.NoHud;
-        AddChild(Pause);
-        if (Options.Mockup != null) { Hud.Visible = false; AddChild(new Mockups(Options.Mockup)); }
-        Pause.Setup(() => Rig.TopDown ? "Top-down" : "Isométrica", () => Preset.Name);
-        Pause.CameraToggled += () => Rig.ToggleMode();
-        Pause.QualityCycled += () => SetPreset(Quality.Next(Preset));
-        Pause.Restart += () => StartRun(Options.Seed);
-        Pause.Quit += () => GetTree().Quit();
+        AddChild(Screens);
+        Screens.Changed += () => Hud.Visible = !Options.NoHud && Screens.Count == 0;
 
-        Rig.SetMode(Options.Camera == "top");
+        Rig.SetMode(ToolRun ? Options.Camera == "top" : Settings.Current.StartCamera == "top");
         Rig.SetYawStep(Options.Yaw);
-        if (Options.Zoom is { } zoom) Rig.SetZoom(zoom);
+        Rig.SetZoom(Options.Zoom ?? (ToolRun ? 30 : Settings.Current.Zoom));
         StartRun(Options.Seed);
+        Settings.Current.ApplySystem(this);
+        if (Options.Screen != null) OpenForShot(Options.Screen);
+        else if (!ToolRun && !Options.Direct) Screens.Push(new MainMenuScreen(this));
+        else RunInProgress = true;
 
         if (Options.Bench != null) _bench = new Bench(this);
+        if (Options.Shot != null) AddChild(new ShotTaker { Main = this });
         if (Options.SelfTest) AddChild(new SelfTestDriver { Test = new SelfTest(this) });
         if (Options.Shot != null || Options.Bench != null)
         {
@@ -91,6 +99,26 @@ public partial class Main : Node3D
         Profiler.Tags.Add("recomeco");
     }
 
+    /// <summary>Settings screen changes: the 3D preset (when <paramref name="preset"/>) and everything else.</summary>
+    public void ApplySettings(bool preset)
+    {
+        if (preset) SetPreset(Settings.Current.Effective());
+        Settings.Current.ApplySystem(this);
+    }
+
+    /// <summary>--tela: opens a screen over the frozen scene for screenshots and documentation.</summary>
+    private void OpenForShot(string screen)
+    {
+        var parts = screen.Split(':');
+        if (parts[0] == "inventario") for (int i = 0; i < 2 && Sim.Inventory.Count > 1; i++) Sim.Equip(Sim.Inventory.Count - 1);
+        Screen s = parts[0] switch
+        {
+            "menu" => new MainMenuScreen(this), "pausa" => new PauseScreen(this), "inventario" => new CharacterScreen(this), "arvore" => new TreeScreen(this),
+            _ => new SettingsScreen(this, parts.Length > 1 ? int.Parse(parts[1]) : 0),
+        };
+        Screens.Push(s);
+    }
+
     public void SetPreset(Quality.Preset preset)
     {
         Preset = preset;
@@ -101,7 +129,10 @@ public partial class Main : Node3D
 
     public override void _UnhandledInput(InputEvent e)
     {
-        if (e.IsActionPressed("pause") && !Pause.IsOpen) { Pause.Open(); GetViewport().SetInputAsHandled(); return; }
+        if (Screens.Count > 0) return;
+        if (e.IsActionPressed("pause")) { Screens.Push(new PauseScreen(this)); GetViewport().SetInputAsHandled(); return; }
+        if (e.IsActionPressed("inventory")) { Screens.Push(new CharacterScreen(this)); GetViewport().SetInputAsHandled(); return; }
+        if (e.IsActionPressed("skill_tree")) { Screens.Push(new TreeScreen(this)); GetViewport().SetInputAsHandled(); return; }
         if (e.IsActionPressed("camera_mode")) Rig.ToggleMode();
         if (e.IsActionPressed("camera_left")) Rig.Rotate(-1);
         if (e.IsActionPressed("camera_right")) Rig.Rotate(1);
@@ -131,11 +162,20 @@ public partial class Main : Node3D
 
         _bench?.Frame(delta);
         if (Options.Fx != null && _frames == 2) { Effects.Hold = .35f; Showcase(Options.Fx); }
-        if (Options.Shot != null && _frames == Options.ShotFrames)
+    }
+
+    /// <summary>--shot: counts frames even while a screen pauses the world, then saves the image and quits.</summary>
+    private sealed partial class ShotTaker : Node
+    {
+        public Main Main = null!;
+        private int _frames;
+        public override void _Ready() => ProcessMode = ProcessModeEnum.Always;
+        public override void _Process(double delta)
         {
+            if (++_frames != Main.Options.ShotFrames) return;
             var image = GetViewport().GetTexture().GetImage();
-            image.SavePng(Options.Shot);
-            GD.Print($"captura: {Options.Shot} ({image.GetWidth()}x{image.GetHeight()}, {Preset.Name}, {(Rig.TopDown ? "top-down" : "isométrica")})");
+            image.SavePng(Main.Options.Shot);
+            GD.Print($"captura: {Main.Options.Shot} ({image.GetWidth()}x{image.GetHeight()}, {Main.Preset.Name}, {(Main.Rig.TopDown ? "top-down" : "isométrica")})");
             GetTree().Quit();
         }
     }
@@ -223,7 +263,7 @@ public partial class Main : Node3D
 
         bool attack = Input.IsActionPressed("attack");
         NVec? destination = null;
-        if (!pad && _clickHeld && !Pause.IsOpen)
+        if (!pad && _clickHeld && Screens.Count == 0)
         {
             var target = Sim.Enemies.FirstOrDefault(e => e.Alive && NVec.Distance(e.Position, aim) < .9f);
             if (target != null)

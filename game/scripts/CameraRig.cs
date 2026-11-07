@@ -19,7 +19,8 @@ public partial class CameraRig : Node3D
 
     private Vector3 _focus;
     private float _shake, _shakeTime;
-    public static bool ShakeEnabled = true;
+    /// <summary>Configurações > Acessibilidade: 0 = no tremor, 1 = full.</summary>
+    public static float ShakeScale = 1f;
     private float _yaw, _pitch = IsoPitch, _distance;
 
     public override void _Ready()
@@ -48,7 +49,7 @@ public partial class CameraRig : Node3D
     }
 
     /// <summary>Short camera tremor on heavy impacts (presentation only; can be switched off for comfort).</summary>
-    public void Shake(float amount) { if (ShakeEnabled) _shake = Mathf.Max(_shake, amount); }
+    public void Shake(float amount) { if (ShakeScale > 0) _shake = Mathf.Max(_shake, amount * Mathf.Sqrt(ShakeScale)); }
 
     public void Follow(Vector3 focus, double delta)
     {

@@ -18,6 +18,7 @@ docs/                     relatório, capturas de tela, resultados de benchmark
 powershell -ExecutionPolicy Bypass -File tools\jogar.ps1 -Preset baixo     # jogar
 powershell -ExecutionPolicy Bypass -File tools\check.ps1                   # testes do domínio + build + autoteste do Godot
 powershell -ExecutionPolicy Bypass -File tools\evidence.ps1                # capturas dos presets e benchmark (abre janela)
+powershell -ExecutionPolicy Bypass -File tools	elas.ps1                   # capturas das telas (menu, configurações, inventário, árvore)
 ```
 Para editar no Godot, abra `game/project.godot`. Os scripts `.cs` abrem no VS Code, que está configurado como editor externo.
 
@@ -29,15 +30,19 @@ Para editar no Godot, abra `game/project.godot`. Os scripts `.cs` abrem no VS Co
 | Ruptura (28 de Fúria) | Clique direito ou Q | X / Quadrado |
 | Investida (recarga de 9 s) | E | Y / Triângulo |
 | Mirar | Mouse | Analógico direito, ou a direção do movimento |
-| Câmera isométrica ou top-down | Tab | Back/View |
+| Personagem e inventário | I | Back/View |
+| Árvore de habilidades | K | R3 (clique do analógico direito) |
+| Câmera isométrica ou top-down | Tab | L3 (clique do analógico esquerdo) |
 | Girar a câmera em 45° | Z / C | LB / RB |
 | Zoom | Roda do mouse | Direcional para cima / para baixo |
 | Pausa | Esc | Start |
 
-Os ícones dos botões no HUD mudam conforme o último dispositivo usado (teclado, Xbox ou PlayStation).
+Os ícones dos botões no HUD mudam conforme o último dispositivo usado (teclado, Xbox ou PlayStation). Tudo pode ser remapeado em
+Configurações > Controles; as configurações ficam em `user://configuracoes.json` (no Windows: `%APPDATA%\Godotpp_userdata\`).
+O jogo abre no menu principal.
 
 ## Opções de linha de comando (depois de `--`)
-`--seed N`, `--preset baixo|medio|alto`, `--camera iso|top`, `--yaw N`, `--zoom P`, `--autopilot`, `--ticks N`, `--freeze`,
+`--jogo` (pula o menu), `--tela menu|pausa|config[:aba]|inventario|arvore`, `--seed N`, `--preset baixo|medio|alto`, `--camera iso|top`, `--yaw N`, `--zoom P`, `--autopilot`, `--ticks N`, `--freeze`,
 `--shot arquivo.png --frames N`, `--bench arquivo.json --seconds S --warmup W`, `--selftest`.
 Capturas de efeitos: `--fx golpe|ruptura|investida` (segura o efeito a 35% da vida). Guia visual: [docs/GUIA_VISUAL.md](docs/GUIA_VISUAL.md).
 Diagnóstico: `--nohud`, `--scale X`, `--lights N`, `--skip partes` (torches, walls, floor, props, enemies, env, hero, herolight, fx, moon,

@@ -24,6 +24,7 @@ public partial class Hud : CanvasLayer
     private readonly Dictionary<string, string> _signatures = new();
     private float _time;
 
+    public static bool DamageNumbers = true, ShowFps;
     public string ObjectiveText { get; private set; } = "";
     public string Banner { get; private set; } = "";
 
@@ -62,13 +63,14 @@ public partial class Hud : CanvasLayer
     {
         _sim = sim; _camera = camera; _actors = actors;
         _floaters.Clear(); _toasts.Clear(); Banner = "";
+        UpdateObjective();
     }
 
     public void OnEvent(GameEvent e)
     {
         switch (e)
         {
-            case HitEvent hit:
+            case HitEvent hit when DamageNumbers:
                 _floaters.Add(new Floater(ActorLayer.World(hit.Position, 2.1f), hit.Amount.ToString(),
                                           hit.OnHero ? Materials.Rgb(255, 90, 80) : Materials.Bone, _time));
                 break;
@@ -82,6 +84,19 @@ public partial class Hud : CanvasLayer
         _time += (float)delta;
         _floaters.RemoveAll(f => _time - f.Born > .9f);
         if (_toasts.Count > 5) _toasts.RemoveAt(0);
+        UpdateObjective();
+        _overlay.QueueRedraw();
+        if (_sim == null) return;
+        var h = _sim.Hero;
+        string size = _bottom.Size.ToString();
+        Redraw(_objective, ObjectiveText + size);
+        Redraw(_loot, _toasts.Count + "|" + string.Join(',', _toasts.Select(t => (int)Math.Min(90, (_time - t.Born) * 10) is var a && a >= 70 ? a : 0)) + size);
+        Redraw(_bottom, $"{h.Health}|{h.MaxHealth}|{h.Fury}|{h.Cooldown(SliceData.Investida.Id) / 6}|{DeviceTracker.Current}|{size}");
+        Redraw(_banner, Banner + DeviceTracker.Current + size + (ShowFps ? Engine.GetFramesPerSecond().ToString() : ""));
+    }
+
+    private void UpdateObjective()
+    {
         if (_sim != null)
         {
             ObjectiveText = _sim.Cleared
@@ -89,14 +104,6 @@ public partial class Hud : CanvasLayer
                 : $"{SliceData.BruteName}: {_sim.EnemiesRemaining} de {_sim.Enemies.Count}";
             if (_sim.Cleared && _sim.Drops.Count == 0 && Banner == "") Banner = "clear";
         }
-        _overlay.QueueRedraw();
-        if (_sim == null) return;
-        var h = _sim.Hero;
-        string size = _bottom.Size.ToString();
-        Redraw(_objective, ObjectiveText + size);
-        Redraw(_loot, _toasts.Count + "|" + string.Join(',', _toasts.Select(t => (int)Math.Min(90, (_time - t.Born) * 10) is var a && a >= 70 ? a : 0)) + size);
-        Redraw(_bottom, $"{h.Health}|{h.Fury}|{h.Cooldown(SliceData.Investida.Id) / 6}|{DeviceTracker.Current}|{size}");
-        Redraw(_banner, Banner + DeviceTracker.Current + size);
     }
 
     private void Redraw(Canvas canvas, string signature)
@@ -176,7 +183,7 @@ public partial class Hud : CanvasLayer
         var panel = new Rect2(size.X / 2 - 300, size.Y - 112, 600, 96);
         UiKit.Frame(c, panel);
         var bars = new Rect2(panel.Position + new Vector2(18, 16), new Vector2(300, 26));
-        UiKit.Bar(c, bars, hero.Health, hero.Stats.MaxHealth, Materials.Blood, $"VIDA  {hero.Health}/{hero.Stats.MaxHealth}");
+        UiKit.Bar(c, bars, hero.Health, hero.MaxHealth, Materials.Blood, $"VIDA  {hero.Health}/{hero.MaxHealth}");
         UiKit.Bar(c, new Rect2(bars.Position + new Vector2(0, 38), bars.Size), hero.Fury, SliceData.FuryMax, Materials.Ember, $"FÚRIA  {hero.Fury}/{SliceData.FuryMax}");
 
         var device = DeviceTracker.Current;
@@ -236,6 +243,7 @@ public partial class Hud : CanvasLayer
 
     private void DrawBanner(Control c, Vector2 size)
     {
+        if (ShowFps) UiKit.Text(c, $"{Engine.GetFramesPerSecond()} FPS", new Vector2(16, size.Y - 14), 11, Materials.Ash);
         if (Banner == "") return;
         bool dead = Banner == "dead";
         var r = new Rect2(size.X / 2 - 220, size.Y * .32f, 440, 92);

@@ -12,6 +12,8 @@ public partial class Effects : Node3D
 {
     public static float ParticleScale = 1f;
     public static bool ImpactLights = true;
+    /// <summary>Configurações > Acessibilidade > Reduzir clarões: scales every flash (lights and hit flashes).</summary>
+    public static float FlashScale = 1f;
     /// <summary>Screenshots only (--fx): every effect is held at this fraction of its life.</summary>
     public static float? Hold;
 
@@ -119,6 +121,7 @@ public partial class Effects : Node3D
     {
         if (!ImpactLights) return;
         var light = _idleLights.Count > 0 ? _idleLights.Pop() : NewLight();
+        energy *= FlashScale;
         light.LightColor = color; light.LightEnergy = energy; light.OmniRange = range; light.Visible = true;
         light.GlobalPosition = at;
         _fades.Add(new Fade { Node = light, Light = light, Energy = energy, Life = life });

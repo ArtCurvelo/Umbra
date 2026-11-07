@@ -108,6 +108,9 @@ public partial class WorldView : Node3D
         return g;
     }
 
+    /// <summary>Configurações > Vídeo > Brilho: 50% = the approved exposure (1.05).</summary>
+    public void SetBrightness(int percent) => Environment.Environment.TonemapExposure = .65f + percent / 100f * .8f;
+
     public void ApplyPreset(Quality.Preset preset)
     {
         Moon.ShadowEnabled = preset.MoonShadow;

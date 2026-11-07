@@ -251,7 +251,7 @@ public partial class ActorLayer : Node3D
             v.Yaw = Mathf.LerpAngle(v.Yaw, targetYaw, 1 - Mathf.Exp(-dt * 16));
             v.Root.Rotation = new Vector3(0, v.Yaw, 0);
             v.FlashTime = Mathf.Max(0, v.FlashTime - dt);
-            v.Skin.SetShaderParameter("flash", v.FlashTime > 0 ? 1.6f * v.FlashTime / .12f : 0f);
+            v.Skin.SetShaderParameter("flash", v.FlashTime > 0 ? 1.6f * Effects.FlashScale * v.FlashTime / .12f : 0f);
 
             if (v.DeathTime >= 0)
             {

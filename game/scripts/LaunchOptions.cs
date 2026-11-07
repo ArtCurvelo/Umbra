@@ -14,7 +14,8 @@ namespace Umbra.Game;
 ///   --freeze            no simulation steps after the fast-forward (same instant for preset comparisons)
 ///   --scale X --lights N --nohud   diagnostic overrides for the benchmark
 ///   --fx golpe|ruptura|investida|impacto   play that effect (visual only) in frame 2, for screenshots
-///   --mockup menu|config|controles|inventario|arvore   Phase 4 screen mockups over the scene
+///   --tela menu|pausa|config[:aba]|inventario|arvore   open a screen over the scene (screenshots)
+///   --jogo              skip the main menu and start in the crypt
 ///   --size WxH  window size for shots/benchmarks
 ///   --selftest          headless integration test; exit code 0 = passed
 /// </summary>
@@ -34,7 +35,8 @@ public sealed class LaunchOptions
     public bool SelfTest;
     public bool Freeze;
     public string? Fx;
-    public string? Mockup;
+    public string? Screen;
+    public bool Direct;
     public Vector2I Size = new(1280, 720);
     public static HashSet<string> Skip = new();
     public float? Scale; public int? Lights; public bool NoHud, NoNormals;
@@ -64,7 +66,8 @@ public sealed class LaunchOptions
                 case "--nohud": o.NoHud = true; break;
                 case "--skip": foreach (var s in Next().Split(',')) Skip.Add(s); break;
                 case "--size": var wh = Next().Split('x'); o.Size = new Vector2I(int.Parse(wh[0]), int.Parse(wh[1])); break;
-                case "--mockup": o.Mockup = Next(); break;
+                case "--tela": o.Screen = Next(); break;
+                case "--jogo": o.Direct = true; break;
                 case "--fx": o.Fx = Next(); break;
                 case "--freeze": o.Freeze = true; break;
                 case "--selftest": o.SelfTest = true; o.Autopilot = true; break;

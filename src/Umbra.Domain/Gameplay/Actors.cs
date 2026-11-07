@@ -32,6 +32,14 @@ public sealed class Hero : Actor
     public string? LastSkill { get; set; }
     public int LastSkillTick { get; set; } = -1000;
 
+    public Equipment Equipment { get; } = new();
+    public SkillRanks Ranks { get; } = new(new[] { SliceData.GolpeBrutal.Id, SliceData.Ruptura.Id, SliceData.Investida.Id });
+
+    /// <summary>Base stats (data/classes.json) plus equipment (PROVISÓRIO numbers, see ItemRules).</summary>
+    public int Attack => Stats.Attack + Equipment.Total(Stat.Attack);
+    public int Defense => Stats.Defense + Equipment.Total(Stat.Defense);
+    public int MaxHealth => Stats.MaxHealth + Equipment.Total(Stat.Health);
+
     public Hero(int id, Vector2 position) : base(id, SliceData.Barbarian, position) { }
 
     public int Cooldown(string skillId) => Cooldowns.TryGetValue(skillId, out var t) ? t : 0;
