@@ -10,6 +10,8 @@ public interface IMap
     int Cell(int x, int y);
     /// <summary>world.sanctuary.inside: city tiles where nobody fights.</summary>
     bool Sanctuary(int x, int y);
+    /// <summary>A region gate (world 5.9): evacuated enemies never land on one.</summary>
+    bool Gate(int x, int y) => false;
 }
 
 /// <summary>Tile geometry of the 0.16 skill shapes — port of game/combat_system/v16/geometry.py (and the line of sight of

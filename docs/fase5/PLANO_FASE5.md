@@ -48,8 +48,8 @@ Regras do documento de direção:
 | 5.4b | O resto do motor: invocações, cadáveres e Jaula (`allies.py`, formas `summon`/`corpse`/`cage`), junto com o Bruxo e o Necromante | Entra na 5.8 |
 | 5.5 | Árvore e graus reais, espaços de habilidade, passivas de classe | **Feito, com paridade** (2026-11-08) |
 | 5.6 | Itens da Reforge: quedas, raridades, afixos, espaços de equipamento, páginas da mochila, gemas, engastes, têmpera, encantamento, reciclagem, reparo, Códice, joalheiro, materiais | **Feito, com paridade** (2026-11-08) |
-| 5.7 | Inimigos e chefes (IA, habilidades dos chefes) | Próximo |
-| 5.8 | Classes, uma por vez (Bárbaro primeiro; Necromante por último, com lacaios e Grimório) | Pendente |
+| 5.7 | Inimigos e chefes: criação por andar, IA (percepção, perseguição, memória, recuo, ataque com preparação), estados, elites, dormência, os 8 chefes (fases, 12 habilidades, armadura óssea, zonas) | **Feito, com paridade** (2026-11-08) |
+| 5.8 | Classes, uma por vez (Bárbaro primeiro; Necromante por último, com lacaios e Grimório) | Próximo |
 | 5.9 | Mundo: as 6 regiões, cidades, teleportes, masmorras por família, dificuldade | Pendente |
 | 5.10 | Saves: conversor dos `slot_N.json` (versões 1, 2 e 3 e seções) para o formato novo, sem tocar nos originais | Pendente |
 | 5.11 | Co-op local | Pendente |
@@ -81,6 +81,11 @@ Regras do documento de direção:
   - a tabela de raridade das dificuldades Difícil e Extremo (`world.difficulty.rarity`) entra com o mundo (5.9); por enquanto vale a rolagem do Normal;
   - a slice ainda usa os itens PROVISÓRIOS (`ItemRules`); ela passa para os itens reais junto com o Bárbaro (5.8);
   - aparência do item no modelo 3D (`skin_geometry`, `appearance.signature`) é apresentação.
+- **Inimigos (`Enemies/`):**
+  - estruturas do Necromante (gaiolas e muros que bloqueiam e podem ser atacados) e a Sentença Espectral chegam por `IFoeHooks` (5.8);
+  - a criação dos inimigos de uma região (quais tipos, onde, elites sorteadas com o gerador da região, escala de dificuldade `difficulty.scale`) e as cidades são o mundo (5.9). Por enquanto o santuário só tem o gancho `IMap.Sanctuary`/`Gate`;
+  - a morte dos inimigos (XP, ouro, quedas, `process_enemy_deaths`) e as invocações pedidas pelo chefe (`process_summons`) são do motor (5.8/5.9);
+  - `EnemyAI.Active` faz o papel de `dungeon._active_enemies` (a lista de inimigos do mapa, definida pelo motor antes do passo dos inimigos).
 - **Fora do domínio (apresentação, no Godot):** `skill_started_at`, som do lançamento, `del motion` do Retorno.
 - **Ligação com a slice:** o combate da slice ainda usa o modelo da Fase 2. Pôr o Bárbaro nas regras reais (cooldowns, recurso, golpe básico com preparação) é a 5.8.
 - **Gatilhos que o jogo chama e o domínio não decide:**
@@ -251,3 +256,50 @@ Regras do documento de direção:
   - aceitar uma pilha cheia (99) para fundir: o espaço livre é 0, então o resultado é o mesmo.
 - **Lacunas que a prova de mutação revelou nos primeiros casos:** conflitos de mãos, aspecto em item Raro reciclado, afixos do Necromante perto do nível 60 e pilhas que enchem pela metade. Ganharam casos próprios.
 - **Sem efeito no jogo ainda:** a slice continua com os itens PROVISÓRIOS (ver pendências).
+
+## Entrega 5.7 (2026-11-08)
+- **Dados:** `game/data/umbra/foes.json`. Traz os 14 tipos de inimigo, os 8 chefes e sua ordem, os multiplicadores por andar, as elites e o alcance de dormência.
+- **Arquivos novos em `src/Umbra.Domain/Enemies/`:**
+  - `Enemy.cs`: o inimigo como o motor composto o monta. `Update` passa pelas camadas nesta ordem:
+    1. estados compartilhados (`necro_status`): atordoar, congelar, prisão, lentidão, Gelidez e provocação;
+    2. guarda do santuário;
+    3. o próprio inimigo.
+  - `Enemy.cs` também tem o dano (para chefes: mitigação por fase, teto por golpe, armadura óssea), a preparação e a resolução do ataque (cegueira, Muralha de Fé refletindo tiros), as elites e a dormência;
+  - `EnemyAI.cs`: a IA dos inimigos comuns (`ai.py`) e os caminhos:
+    - o campo de distâncias com a busca local limitada;
+    - a busca em largura simples dos chefes;
+    - a evacuação do santuário.
+  - `BossController.cs`: fases, escolha de habilidade por chefe e distância, preparação, bloqueio por parede, as 12 habilidades, zonas de corrupção e teleporte.
+- **Ferramentas e testes:** `tools/parity/enemies_parity.py`, `tests/parity/enemies_cases.json` e `ParityEnemiesTests.cs`.
+- **Paridade: 138 sequências (5 787 operações) com inimigos reais do motor composto.** Elas cobrem:
+  - os 14 tipos;
+  - chefes em 10 andares (os 8 chefes e os ciclos acima do andar 20);
+  - todos os estados de controle, as elites e a dormência;
+  - 110 sequências aleatórias.
+
+  A cada passo são conferidos todos os campos de cada inimigo e do herói. Todas as 12 habilidades de chefe aparecem nos casos.
+- **Testes: xUnit 1 001/1 001; autoteste do Godot 35/35.**
+- **Prova de mutação: 14 erros detectados.**
+
+  | Erro inserido | Sequências que falham |
+  |---|---|
+  | vida por andar contando o 1º andar | 136 |
+  | memória de 179 quadros | 127 |
+  | atordoamento por dano de 3 quadros | 116 |
+  | elite com 2,4× de vida | 37 |
+  | busca local de caminho limitada a 16 | 34 |
+  | teto por golpe do chefe de 25% | 26 |
+  | acólito virando atirador | 18 |
+  | mitigação do chefe de 10% na fase I | 16 |
+  | preferência do chefe invertida só colado | 12 |
+  | zona de corrupção a cada 31 quadros | 7 |
+  | recuo sem linha de visão no desempate | 6 |
+  | lentidão necromântica de 25% | 6 |
+  | dormência a 30 em vez de 31 casas | 2 |
+  | fase II a 55% | 1 |
+
+- **Mutações sem efeito possível (registradas):**
+  - o tiro à queima-roupa: o ataque à distância só começa a 2+ casas e só acerta se o herói continuar na casa marcada;
+  - a armadura óssea extra da fase II (`bone_armor += 45` em `check_phase`) **nunca acontece no UMBRA**: o golpe que derruba o Colosso abaixo de 50% sempre gasta a armadura antes. É uma regra inerte no original, mantida igual. Vale a decisão do diretor criativo se ela deveria funcionar.
+- **Lacunas que a prova de mutação revelou nos primeiros casos:** nenhum caso parava um chefe entre 50% e 55% da vida, e nenhum mapa permitia um inimigo a exatamente 30 casas. Ganharam casos próprios.
+- **Sem efeito no jogo ainda:** a slice continua com o inimigo simples da Fase 2. A ligação acontece com o Bárbaro e o motor (5.8).

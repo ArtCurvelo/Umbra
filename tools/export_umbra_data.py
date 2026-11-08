@@ -90,6 +90,22 @@ def equipment():
     }
 
 
+def foes():
+    """Enemy tables (step 5.7): types, bosses, the per-floor multipliers and elites, read from the composed engine."""
+    import game.core.engine as core_engine
+    from game.entities import enemies
+    from game.combat_system import boss_catalog, elites
+    from game.config import settings
+    return {
+        'ENEMY_TYPES': enemies.ENEMY_TYPES, 'RANGED_TYPES': sorted(enemies.RANGED_TYPES),
+        'BOSS_ABILITIES': boss_catalog.BOSS_ABILITIES, 'BOSS_ORDER': boss_catalog.BOSS_ORDER,
+        'HARDCORE': {n: getattr(settings, n) for n in ('HARDCORE_ENEMY_HEALTH_BASE', 'HARDCORE_ENEMY_HEALTH_PER_FLOOR',
+                                                       'HARDCORE_ENEMY_DAMAGE_BASE', 'HARDCORE_ENEMY_DAMAGE_PER_FLOOR')},
+        'ELITES': {n: getattr(elites, n) for n in ('CHANCE', 'HEALTH', 'DAMAGE', 'XP', 'GOLD')},
+        'DORMANT_RANGE': core_engine.DORMANT_RANGE,
+    }
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     hashes = {}
@@ -118,6 +134,7 @@ def main():
     hashes['rules.json'] = write('rules.json', rules)
     hashes['trees.json'] = write('trees.json', trees())
     hashes['equipment.json'] = write('equipment.json', equipment())
+    hashes['foes.json'] = write('foes.json', foes())
 
     commit = subprocess.run(['git', '-C', str(UMBRA), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
     branch = subprocess.run(['git', '-C', str(UMBRA), 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True).stdout.strip()
