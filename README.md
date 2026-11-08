@@ -53,4 +53,5 @@ Plano, método e estado: [docs/fase5/PLANO_FASE5.md](docs/fase5/PLANO_FASE5.md).
 ```powershell
 ..\umbra-ashes-below\.venv\Scripts\python.exe tools\export_umbra_data.py        # dados -> game/data/umbra
 ..\umbra-ashes-below\.venv\Scripts\python.exe tools\parity\status_parity.py    # casos de paridade -> tests/parity
+..\umbra-ashes-below\.venv\Scripts\python.exe tools\parity\resources_parity.py
 ```

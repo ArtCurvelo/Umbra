@@ -48,7 +48,7 @@ def main():
               for cls in catalog.MODULES}
     hashes['skills.json'] = write('skills.json', skills)
 
-    from game.combat_system import status, elements
+    from game.combat_system import status, elements, resources
     from game.equipment import rarity
     from game.accessibility import palette
     rules = {
@@ -57,6 +57,8 @@ def main():
             'CORRUPTION_HEAL', 'CAPS', 'HARMFUL', 'TICK', 'MAX_STACKS', 'MAX_TICKS', 'BOSS_FACTOR', 'PRESSURE_STEP',
             'IMMUNE_AT', 'PRESSURE_DECAY', 'SAVED')},
         'elements': {'NAMES': elements.NAMES, 'COLORS': elements.COLORS, 'CLASS_POOL': elements.CLASS_POOL, 'PROFILES': elements.PROFILES},
+        'resources': {name: getattr(resources, name) for name in (
+            'FORTIFY_HEAL', 'FORTIFY_SECONDS', 'ORB_SECONDS', 'ORB_HEAL', 'ORB_RESOURCE', 'ORB_LIMIT', 'STACKS')},
         'rarity': {name: getattr(rarity, name) for name in ('ORDER', 'LEGACY', 'DROPPABLE', 'TIER', 'TAG', 'FRAME', 'MULTIPLIER', 'SUPERIOR')},
         'palette': {'DEFAULT': palette.DEFAULT},
     }
