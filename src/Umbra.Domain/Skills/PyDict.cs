@@ -37,7 +37,7 @@ public static class Py
 {
     public static bool Truthy(object? v) => v switch
     {
-        null => false, bool b => b, double d => d != 0, int i => i != 0, string s => s.Length > 0,
+        null => false, bool b => b, double d => d != 0, long n => n != 0, int i => i != 0, string s => s.Length > 0,
         List<object?> l => l.Count > 0, PyDict d => d.Count > 0, _ => true,
     };
 
@@ -65,11 +65,30 @@ public static class Py
         return best;
     }
 
+    /// <summary>Python max(items, key=...): the first item with the largest key.</summary>
+    public static T MaxBy<T, TKey>(IEnumerable<T> items, Func<T, TKey> key) where TKey : IComparable<TKey>
+    {
+        bool any = false; T best = default!; TKey bestKey = default!;
+        foreach (var item in items)
+        {
+            var k = key(item);
+            if (!any || k.CompareTo(bestKey) > 0) { best = item; bestKey = k; any = true; }
+        }
+        if (!any) throw new InvalidOperationException("max() arg is an empty sequence");
+        return best;
+    }
+
     /// <summary>Python list[:stop] (a negative stop counts from the end).</summary>
     public static List<T> Head<T>(IReadOnlyList<T> items, int stop)
     {
         if (stop < 0) stop = Math.Max(0, items.Count + stop);
         return items.Take(stop).ToList();
+    }
+
+    public static bool IsInteger(JsonElement e)
+    {
+        var raw = e.GetRawText();
+        return raw.IndexOfAny(new[] { '.', 'e', 'E' }) < 0 && e.TryGetInt64(out _);
     }
 
     public static object? DeepCopy(object? v) => v switch
@@ -83,7 +102,8 @@ public static class Py
     {
         JsonValueKind.Object => new PyDict(e.EnumerateObject().Select(p => new KeyValuePair<string, object?>(p.Name, FromJson(p.Value)))),
         JsonValueKind.Array => e.EnumerateArray().Select(FromJson).ToList(),
-        JsonValueKind.Number => e.GetDouble(),
+        // Python keeps int and float apart (5 vs 5.0) and some rules depend on it (item quality): JSON integers stay long
+        JsonValueKind.Number => IsInteger(e) ? (object?)e.GetInt64() : e.GetDouble(),
         JsonValueKind.String => e.GetString(),
         JsonValueKind.True => true,
         JsonValueKind.False => false,

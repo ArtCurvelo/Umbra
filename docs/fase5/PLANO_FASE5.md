@@ -47,8 +47,8 @@ Regras do documento de direção:
 | 5.4 | Motor de habilidades v16 (formas, efeitos, condições, mundo por tick) e opções C/E/T, para as 5 classes sem invocações | **Feito, com paridade** (2026-11-08) |
 | 5.4b | O resto do motor: invocações, cadáveres e Jaula (`allies.py`, formas `summon`/`corpse`/`cage`), junto com o Bruxo e o Necromante | Entra na 5.8 |
 | 5.5 | Árvore e graus reais, espaços de habilidade, passivas de classe | **Feito, com paridade** (2026-11-08) |
-| 5.6 | Itens da Reforge: raridades, afixos, gemas, engastes, forja, baú, materiais (substitui os itens PROVISÓRIOS da slice) | Próximo |
-| 5.7 | Inimigos e chefes (IA, habilidades dos chefes) | Pendente |
+| 5.6 | Itens da Reforge: quedas, raridades, afixos, espaços de equipamento, páginas da mochila, gemas, engastes, têmpera, encantamento, reciclagem, reparo, Códice, joalheiro, materiais | **Feito, com paridade** (2026-11-08) |
+| 5.7 | Inimigos e chefes (IA, habilidades dos chefes) | Próximo |
 | 5.8 | Classes, uma por vez (Bárbaro primeiro; Necromante por último, com lacaios e Grimório) | Pendente |
 | 5.9 | Mundo: as 6 regiões, cidades, teleportes, masmorras por família, dificuldade | Pendente |
 | 5.10 | Saves: conversor dos `slot_N.json` (versões 1, 2 e 3 e seções) para o formato novo, sem tocar nos originais | Pendente |
@@ -75,6 +75,12 @@ Regras do documento de direção:
   - recalcular atributos depois de uma compra (`refresh_stats`) e cancelar o golpe em preparação são do herói (`ITreeOwner`, 5.8);
   - as passivas de lacaios (`minion_health`, `minion_damage`, `ally_lost`) entram com as invocações (5.8);
   - converter a árvore dos saves antigos (`respec.migrate`) é a 5.10.
+- **Itens (`Items/`):**
+  - o baú compartilhado por mundo (`inventory/stash.py`) é um arquivo à parte do save do herói e entra com os saves (5.10);
+  - os atributos do herói a partir do equipamento (`equipment/stats.recalculate`), a comparação de itens e os efeitos dos aspectos lendários (`legendary.install`: golpe básico, dano recebido, poções, esquiva) são do herói (5.8). Por enquanto `IGearOwner.RefreshStats` só sincroniza os apelidos do equipamento, que é a parte de `recalculate` que mexe em itens;
+  - a tabela de raridade das dificuldades Difícil e Extremo (`world.difficulty.rarity`) entra com o mundo (5.9); por enquanto vale a rolagem do Normal;
+  - a slice ainda usa os itens PROVISÓRIOS (`ItemRules`); ela passa para os itens reais junto com o Bárbaro (5.8);
+  - aparência do item no modelo 3D (`skin_geometry`, `appearance.signature`) é apresentação.
 - **Fora do domínio (apresentação, no Godot):** `skill_started_at`, som do lançamento, `del motion` do Retorno.
 - **Ligação com a slice:** o combate da slice ainda usa o modelo da Fase 2. Pôr o Bárbaro nas regras reais (cooldowns, recurso, golpe básico com preparação) é a 5.8.
 - **Gatilhos que o jogo chama e o domínio não decide:**
@@ -193,3 +199,55 @@ Regras do documento de direção:
   | Sede com limiar de 40% | 2 |
 
 - **Sem efeito no jogo ainda:** a slice continua com os graus PROVISÓRIOS e o combate da Fase 2 (ver pendências).
+
+## Entrega 5.6 (2026-11-08)
+- **Dados:** `game/data/umbra/equipment.json`, com todas as tabelas de itens lidas depois de o motor ser composto. Duas camadas mudam valores:
+  - `balance.py` troca os multiplicadores de raridade (1,12 / 1,26 / 1,62, não os brutos de `items.py`);
+  - `legendary.install` completa os nomes de aspectos da forja.
+- **Arquivos novos em `src/Umbra.Domain/Items/`:**
+  - `ItemTables.cs`: raridades, níveis de item e campos da Reforge (durabilidade, qualidade, engastes, têmpera, aparência escolhida);
+  - `Loot.cs`: quedas, afixos do Necromante, aspecto lendário e aparência do item;
+  - `Gear.cs`: espaços por classe, migração de saves antigos, apelidos, equipar e desequipar, páginas da mochila e itens perdidos;
+  - `Crafting.cs`: materiais, gemas, têmpera, encantamento, reciclagem e reparo, forja, Códice, guarda-roupa e joalheiro.
+- **Ferramentas e testes:** `tools/parity/items_parity.py`, `tests/parity/items_cases.json` e `ParityItemsTests.cs`.
+- **A queda real tem três camadas, e o port segue a mesma ordem de sorteios:**
+  1. `create_data` original. Monta o dicionário de itens simples a cada chamada, então sorteia ouro e essência mesmo para uma espada.
+  2. O rebalanceamento de `balance.py`.
+  3. `forge.attach_aspect` de `core/compatibility.py`, que sorteia um aspecto da forja para armas Lendárias.
+
+  Depois disso, `loot.roll` refaz o registro e guarda só a raridade.
+- **Não determinístico no Python:**
+  - `loot.roll` sorteia a família da arma de um `set`, cuja ordem muda com o hash de strings do processo. O roteiro grava a ordem que viu, e o C# usa essa ordem na paridade;
+  - no jogo em C#, a ordem é a dos espaços da classe.
+- **Inteiro e decimal:** o Python distingue `5` de `5.0`, e a qualidade arredonda os dois de jeitos diferentes. `PyDict` passou a guardar inteiros como `long`. A comparação dos itens é estrita no tipo.
+  - A prova de tipo encontrou três lugares onde o `?:` do C# transformava `long` em `double`: a leitura do JSON, o afixo maximizado e a soma de gemas.
+- **Paridade: 90 sequências (5 602 operações) iguais ao Python.** Elas rodam em heróis reais das 7 classes com `Item(...)` real, e a cada passo conferem:
+  - ouro, nível e materiais;
+  - as quatro páginas da mochila;
+  - o equipamento, os apelidos (por espaço) e os itens perdidos;
+  - o registro do mundo, os aspectos ativos, os bônus de gemas e os afixos do Necromante.
+- **Testes: xUnit 863/863; autoteste do Godot 35/35.**
+- **Prova de mutação: 14 erros inseridos, 14 detectados.**
+
+  | Erro inserido | Sequências que falham |
+  |---|---|
+  | bônus elemental do Raro de 6% | 71 |
+  | preço de venda ×4 por nível | 65 |
+  | valor da arma 0,27 por nível | 63 |
+  | encantamento começando no 2º preço | 52 |
+  | sem a camada `attach_aspect` | 11 |
+  | segundo anel sempre no espaço 1 | 4 |
+  | pilha de gemas aceitando 100 | 3 |
+  | foco sem tirar o cajado do mago | 2 |
+  | arredondamento bancário na qualidade | 1 |
+  | gema no último engaste livre | 1 |
+  | têmpera sem gastar redefinição | 1 |
+  | Códice aprendendo aspecto de qualquer raridade | 1 |
+  | alcance de cadáver +1 desde o nível 50 | 1 |
+  | espada de duas mãos sem tirar o escudo | 1 |
+
+- **Mutações sem efeito possível (registradas):**
+  - o limite do rebalanceamento da arma: `loot.roll` descarta o valor rebalanceado e guarda só a raridade;
+  - aceitar uma pilha cheia (99) para fundir: o espaço livre é 0, então o resultado é o mesmo.
+- **Lacunas que a prova de mutação revelou nos primeiros casos:** conflitos de mãos, aspecto em item Raro reciclado, afixos do Necromante perto do nível 60 e pilhas que enchem pela metade. Ganharam casos próprios.
+- **Sem efeito no jogo ainda:** a slice continua com os itens PROVISÓRIOS (ver pendências).

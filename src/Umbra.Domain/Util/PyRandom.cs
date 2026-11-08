@@ -6,6 +6,10 @@ public interface IRandom
     double Random();
     int RandInt(int a, int b);
     T Choice<T>(IReadOnlyList<T> items);
+    /// <summary>random.choices(population, weights, k=1)[0].</summary>
+    T Weighted<T>(IReadOnlyList<T> items, IReadOnlyList<double> weights);
+    /// <summary>random.sample(population, k).</summary>
+    List<T> Sample<T>(IReadOnlyList<T> items, int k);
 }
 
 /// <summary>
@@ -82,6 +86,7 @@ public sealed class PyRandom : IRandom
 
     private int RandBelow(int n)
     {
+        if (n <= 0) return 0;
         int k = 0; for (int v = n; v > 0; v >>= 1) k++;      // n.bit_length()
         uint r = GetRandBits(k);
         while (r >= n) r = GetRandBits(k);
@@ -89,6 +94,42 @@ public sealed class PyRandom : IRandom
     }
 
     public int RandInt(int a, int b) => a + RandBelow(b + 1 - a);
+
+    public T Weighted<T>(IReadOnlyList<T> items, IReadOnlyList<double> weights)
+    {
+        var cumulative = new double[weights.Count]; double sum = 0;
+        for (int i = 0; i < weights.Count; i++) { sum += weights[i]; cumulative[i] = sum; }
+        double total = cumulative[^1] + 0.0;
+        if (!(total > 0) || !double.IsFinite(total)) throw new ArgumentException("Total of weights must be greater than zero");
+        double x = Random() * total; int lo = 0, hi = items.Count - 1;
+        while (lo < hi) { int mid = (lo + hi) / 2; if (x < cumulative[mid]) hi = mid; else lo = mid + 1; }   // bisect_right
+        return items[lo];
+    }
+
+    public List<T> Sample<T>(IReadOnlyList<T> items, int k)
+    {
+        int n = items.Count;
+        if (k < 0 || k > n) throw new ArgumentException("Sample larger than population or is negative");
+        var result = new List<T>(k);
+        int setsize = 21;
+        if (k > 5) setsize += (int)Math.Pow(4, Math.Ceiling(Math.Log(k * 3) / Math.Log(4)));
+        if (n <= setsize)
+        {
+            var pool = items.ToList();
+            for (int i = 0; i < k; i++) { int j = RandBelow(n - i); result.Add(pool[j]); pool[j] = pool[n - i - 1]; }
+        }
+        else
+        {
+            var selected = new HashSet<int>();
+            for (int i = 0; i < k; i++)
+            {
+                int j = RandBelow(n);
+                while (selected.Contains(j)) j = RandBelow(n);
+                selected.Add(j); result.Add(items[j]);
+            }
+        }
+        return result;
+    }
 
     public T Choice<T>(IReadOnlyList<T> items)
     {

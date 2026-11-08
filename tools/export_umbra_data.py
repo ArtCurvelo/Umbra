@@ -58,6 +58,38 @@ def trees():
     return out
 
 
+def equipment():
+    """Item tables (step 5.6), read after the engine is composed: core.balance sets the live rarity multipliers and
+    legendary.install fills the forge's aspect names. Only tables; the rules are ported in C#."""
+    import game.core.engine  # noqa: F401
+    from game.entities import items
+    from game.equipment import (loot, slots, legendary, necro_affixes, itemdata, gems, temper, enchant, recycle, materials,
+                                codex, jeweler, forge)
+    from game.inventory import pages, lost
+    from game.skills.catalog import RELIC_CATALOG
+    take = lambda module, *names: {n: getattr(module, n) for n in names}
+    return {
+        'items': {'RARITIES': items.RARITIES, 'WEAPONS': items.WEAPONS, 'ARMORS': items.ARMORS, 'WEAPON_BASE': items.WEAPON_BASE,
+                  'ARMOR_BASE': items.ARMOR_BASE, 'ACCESSORIES': items.ACCESSORIES, 'RELICS': list(RELIC_CATALOG.values())},
+        'loot': take(loot, 'WEAPONS', 'ARMORS', 'SUFFIXES'),
+        'slots': take(slots, 'ARMOR', 'JEWELRY', 'CLASS_WEAPONS', 'LABELS', 'SUPPORT_SLOTS'),
+        'legendary': {'CATALOG': legendary.CATALOG},
+        'necro_affixes': take(necro_affixes, 'AFFIXES', 'PERCENT', 'CAPS', 'TAG'),
+        'itemdata': take(itemdata, 'EQUIPMENT', 'DURABILITY_MAX', 'DEATH_LOSS', 'QUALITY_MAX', 'QUALITY_STEP', 'QUALITY_SPECIAL',
+                         'MAXIMIZE_BONUS', 'SPECIAL_MATERIAL', 'SOCKET_LIMITS'),
+        'gems': take(gems, 'GRADES', 'FAMILIES', 'STAT_NAMES'),
+        'temper': take(temper, 'RECIPES', 'STARTING', 'RESETS', 'DEFAULT_RESETS', 'COST', 'GOLD', 'STAT_NAMES'),
+        'enchant': take(enchant, 'KEYS', 'NAMES', 'BASE_GOLD', 'GROWTH'),
+        'recycle': take(recycle, 'VALUABLE', 'MODES', 'QUESTION'),
+        'materials': take(materials, 'CATALOG', 'RECYCLE_YIELD'),
+        'codex': take(codex, 'CATEGORIES', 'ASPECT_CATEGORY', 'SLOT_CATEGORIES', 'ENGRAVE_RARITIES', 'ENGRAVE_GOLD'),
+        'jeweler': take(jeweler, 'CREATE_COUNT', 'SOCKET_COST'),
+        'forge': {'ASPECTS': forge.ASPECTS},
+        'pages': take(pages, 'CAPACITY', 'PAGES', 'NAMES', 'ATTR', 'EQUIPMENT', 'POTION_CAP', 'STACK_MAX'),
+        'lost': {'MAX': lost.MAX},
+    }
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     hashes = {}
@@ -85,6 +117,7 @@ def main():
     }
     hashes['rules.json'] = write('rules.json', rules)
     hashes['trees.json'] = write('trees.json', trees())
+    hashes['equipment.json'] = write('equipment.json', equipment())
 
     commit = subprocess.run(['git', '-C', str(UMBRA), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
     branch = subprocess.run(['git', '-C', str(UMBRA), 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True).stdout.strip()

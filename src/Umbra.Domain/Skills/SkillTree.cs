@@ -137,7 +137,7 @@ public sealed class SkillTree
         foreach (var id in Catalog.Order)
         {
             var node = Nodes[id];
-            if (Unlocked.Contains(id) && node.Str("effect") == effect && Active(id) && node.Get("value") is double v) total += v;
+            if (Unlocked.Contains(id) && node.Str("effect") == effect && Active(id) && node.Get("value") is double or long) total += Py.Num(node.Get("value"));
         }
         return TreeCatalog.EffectCaps.TryGetValue(effect, out var cap) ? Math.Min(cap, total) : total;
     }

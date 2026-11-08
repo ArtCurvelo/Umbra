@@ -1,0 +1,1473 @@
+{
+ "items": {
+  "RARITIES": {
+   "Comum": {
+    "multiplier": 1.0,
+    "color": [
+     196,
+     196,
+     200
+    ]
+   },
+   "Mágico": {
+    "multiplier": 1.12,
+    "color": [
+     70,
+     140,
+     255
+    ]
+   },
+   "Raro": {
+    "multiplier": 1.26,
+    "color": [
+     250,
+     222,
+     70
+    ]
+   },
+   "Lendário": {
+    "multiplier": 1.62,
+    "color": [
+     255,
+     128,
+     32
+    ]
+   },
+   "Único": {
+    "multiplier": 1.62,
+    "color": [
+     176,
+     112,
+     56
+    ]
+   },
+   "Único Mítico": {
+    "multiplier": 1.62,
+    "color": [
+     170,
+     80,
+     240
+    ]
+   }
+  },
+  "WEAPONS": [
+   "Machado do Carrasco",
+   "Lâmina de Cinzas",
+   "Espadão do Exílio",
+   "Foice da Lua Morta",
+   "Martelo do Juramento",
+   "Adaga do Silêncio",
+   "Cajado das Sete Runas",
+   "Orbe do Vazio",
+   "Lança do Primeiro Sol",
+   "Arco do Caçador Cinzento",
+   "Machado Duplo do Frenesi",
+   "Espada do Rei Afogado",
+   "Cetro da Tempestade",
+   "Punhal Carmesim",
+   "Cajado da Raiz Antiga",
+   "Lâmina do Eclipse",
+   "Quebra-Almas",
+   "Agulha Espectral",
+   "Báculo do Último Pacto",
+   "Mandíbula do Colosso"
+  ],
+  "ARMORS": [
+   "Couro Reforçado",
+   "Cota das Cinzas",
+   "Peitoral do Vigia",
+   "Manto do Oráculo",
+   "Armadura Abissal",
+   "Couraça do Carrasco",
+   "Vestes de Geada",
+   "Malha do Juramento",
+   "Traje do Predador",
+   "Manto de Espinhos",
+   "Placas do Colosso",
+   "Armadura do Sol Partido",
+   "Pele do Urso Ancestral",
+   "Véu do Bruxo",
+   "Casca do Mundo",
+   "Couraça Rubra",
+   "Manto Astral",
+   "Armadura do Rei Afogado",
+   "Veste do Eclipse",
+   "Égide das Profundezas"
+  ],
+  "WEAPON_BASE": {
+   "Machado do Carrasco": 8,
+   "Lâmina de Cinzas": 7,
+   "Espadão do Exílio": 10,
+   "Foice da Lua Morta": 8,
+   "Martelo do Juramento": 9,
+   "Adaga do Silêncio": 6,
+   "Cajado das Sete Runas": 8,
+   "Orbe do Vazio": 7,
+   "Lança do Primeiro Sol": 9,
+   "Arco do Caçador Cinzento": 8,
+   "Machado Duplo do Frenesi": 11,
+   "Espada do Rei Afogado": 12,
+   "Cetro da Tempestade": 10,
+   "Punhal Carmesim": 9,
+   "Cajado da Raiz Antiga": 10,
+   "Lâmina do Eclipse": 13,
+   "Quebra-Almas": 14,
+   "Agulha Espectral": 11,
+   "Báculo do Último Pacto": 13,
+   "Mandíbula do Colosso": 15,
+   "Espada Enferrujada": 3,
+   "Machado de Guerra": 5,
+   "Lâmina das Cinzas": 7,
+   "Espada do Abismo": 9,
+   "Martelo Sagrado": 11
+  },
+  "ARMOR_BASE": {
+   "Couro Reforçado": 4,
+   "Cota das Cinzas": 6,
+   "Peitoral do Vigia": 7,
+   "Manto do Oráculo": 4,
+   "Armadura Abissal": 8,
+   "Couraça do Carrasco": 10,
+   "Vestes de Geada": 5,
+   "Malha do Juramento": 8,
+   "Traje do Predador": 6,
+   "Manto de Espinhos": 7,
+   "Placas do Colosso": 12,
+   "Armadura do Sol Partido": 11,
+   "Pele do Urso Ancestral": 10,
+   "Véu do Bruxo": 8,
+   "Casca do Mundo": 11,
+   "Couraça Rubra": 13,
+   "Manto Astral": 9,
+   "Armadura do Rei Afogado": 14,
+   "Veste do Eclipse": 12,
+   "Égide das Profundezas": 15,
+   "Armadura de Couro": 2,
+   "Cota de Malha": 4,
+   "Peitoral das Cinzas": 6,
+   "Armadura do Guardião": 10
+  },
+  "ACCESSORIES": [
+   [
+    "Anel das Cinzas",
+    {
+     "attack": 2,
+     "health": 8
+    }
+   ],
+   [
+    "Amuleto do Vigia",
+    {
+     "defense": 2,
+     "health": 12
+    }
+   ],
+   [
+    "Selo Arcano",
+    {
+     "mana": 18,
+     "attack": 1
+    }
+   ],
+   [
+    "Pingente Voraz",
+    {
+     "attack": 3,
+     "mana": 6
+    }
+   ],
+   [
+    "Medalhão do Guardião",
+    {
+     "defense": 3,
+     "health": 10
+    }
+   ],
+   [
+    "Marca do Berserker",
+    {
+     "attack": 5,
+     "health": 12
+    }
+   ],
+   [
+    "Olho do Oráculo",
+    {
+     "attack": 4,
+     "mana": 12
+    }
+   ],
+   [
+    "Broche do Andarilho",
+    {
+     "defense": 2,
+     "health": 18
+    }
+   ],
+   [
+    "Dente do Predador",
+    {
+     "attack": 4,
+     "defense": 1
+    }
+   ],
+   [
+    "Coração de Carvalho",
+    {
+     "health": 25,
+     "defense": 2
+    }
+   ],
+   [
+    "Fragmento de Alma",
+    {
+     "attack": 3,
+     "mana": 20
+    }
+   ],
+   [
+    "Selo da Tempestade",
+    {
+     "attack": 5,
+     "defense": 2
+    }
+   ],
+   [
+    "Anel da Colheita",
+    {
+     "health": 14,
+     "mana": 10
+    }
+   ],
+   [
+    "Ídolo do Vazio",
+    {
+     "attack": 6,
+     "health": 6
+    }
+   ],
+   [
+    "Lágrima Solar",
+    {
+     "defense": 4,
+     "health": 16
+    }
+   ],
+   [
+    "Medalhão do Eclipse",
+    {
+     "attack": 7,
+     "defense": 3
+    }
+   ],
+   [
+    "Raiz Imortal",
+    {
+     "health": 30,
+     "defense": 3
+    }
+   ],
+   [
+    "Coroa de Ossos",
+    {
+     "attack": 5,
+     "health": 20
+    }
+   ],
+   [
+    "Cicatriz do Pacto",
+    {
+     "attack": 8,
+     "mana": 8
+    }
+   ],
+   [
+    "Runas do Fim",
+    {
+     "attack": 6,
+     "defense": 5
+    }
+   ]
+  ],
+  "RELICS": [
+   {
+    "name": "Brasa do Primeiro Carrasco",
+    "stats": {
+     "attack": 2,
+     "defense": 2
+    }
+   },
+   {
+    "name": "Selo do Juramento Sangrento",
+    "stats": {
+     "attack": 4,
+     "defense": 1
+    }
+   },
+   {
+    "name": "Lente do Observador",
+    "stats": {
+     "attack": 3,
+     "defense": 1
+    }
+   },
+   {
+    "name": "Osso do Rei dos Restos",
+    "stats": {
+     "attack": 1,
+     "defense": 4
+    }
+   },
+   {
+    "name": "Coração da Tecelã",
+    "stats": {
+     "attack": 3,
+     "defense": 2
+    }
+   },
+   {
+    "name": "Mandíbula da Fome",
+    "stats": {
+     "attack": 5,
+     "defense": 1
+    }
+   },
+   {
+    "name": "Escama das Asas da Ruína",
+    "stats": {
+     "attack": 4,
+     "defense": 3
+    }
+   },
+   {
+    "name": "Coroa do Último Trono",
+    "stats": {
+     "attack": 5,
+     "defense": 3
+    }
+   }
+  ]
+ },
+ "loot": {
+  "WEAPONS": {
+   "mace2h": [
+    "Malho",
+    "Marreta",
+    "Martelo de Guerra"
+   ],
+   "sword2h": [
+    "Espada Bastarda",
+    "Montante",
+    "Espada Colossal"
+   ],
+   "axe2h": [
+    "Machado de Guerra",
+    "Machado do Carrasco",
+    "Machado Fendido"
+   ],
+   "dagger": [
+    "Adaga Serrilhada",
+    "Punhal",
+    "Estilete"
+   ],
+   "sword_short": [
+    "Espada Curta",
+    "Gládio",
+    "Lâmina Curva"
+   ],
+   "axe1h": [
+    "Machadinha",
+    "Cutelo",
+    "Machado Curto"
+   ],
+   "scythe": [
+    "Foice Funerária",
+    "Foice de Ossos",
+    "Ceifadora"
+   ],
+   "staff": [
+    "Cajado Rúnico",
+    "Cajado Ancestral",
+    "Bordão de Carvalho"
+   ],
+   "wand": [
+    "Varinha de Cristal",
+    "Varinha Cinérea",
+    "Condutor Arcano"
+   ],
+   "focus": [
+    "Orbe Arcano",
+    "Grimório",
+    "Relicário"
+   ],
+   "sword_long": [
+    "Espada Longa",
+    "Espada de Juramento",
+    "Lâmina da Aurora"
+   ],
+   "shield": [
+    "Escudo de Ferro",
+    "Broquel Solar",
+    "Escudo de Carvalho"
+   ],
+   "bow": [
+    "Arco Longo",
+    "Arco Recurvo",
+    "Arco de Caça"
+   ],
+   "crossbow": [
+    "Besta de Guerra",
+    "Besta Leve",
+    "Arbalesta"
+   ]
+  },
+  "ARMORS": {
+   "helmet": [
+    "Elmo",
+    "Capuz",
+    "Coroa"
+   ],
+   "chest": [
+    "Peitoral",
+    "Túnica",
+    "Cota"
+   ],
+   "gloves": [
+    "Manoplas",
+    "Luvas",
+    "Braçadeiras"
+   ],
+   "pants": [
+    "Calças",
+    "Perneiras",
+    "Grevas de Couro"
+   ],
+   "boots": [
+    "Botas",
+    "Sabatons",
+    "Botinas"
+   ]
+  },
+  "SUFFIXES": [
+   "das Cinzas",
+   "do Crepúsculo",
+   "do Peregrino",
+   "do Abismo",
+   "da Vigília",
+   "do Eclipse"
+  ]
+ },
+ "slots": {
+  "ARMOR": [
+   "helmet",
+   "chest",
+   "gloves",
+   "pants",
+   "boots"
+  ],
+  "JEWELRY": [
+   "amulet",
+   "ring1",
+   "ring2"
+  ],
+  "CLASS_WEAPONS": {
+   "barbaro": {
+    "blunt": [
+     "mace2h"
+    ],
+    "slashing": [
+     "sword2h",
+     "axe2h"
+    ],
+    "dual1": [
+     "dagger",
+     "sword_short",
+     "axe1h"
+    ],
+    "dual2": [
+     "dagger",
+     "sword_short",
+     "axe1h"
+    ]
+   },
+   "mago": {
+    "main_hand": [
+     "staff",
+     "wand"
+    ],
+    "off_hand": [
+     "focus"
+    ]
+   },
+   "paladino": {
+    "greatsword": [
+     "sword2h"
+    ],
+    "sword": [
+     "sword_long"
+    ],
+    "shield": [
+     "shield"
+    ]
+   },
+   "ladino": {
+    "ranged": [
+     "bow",
+     "crossbow"
+    ],
+    "dual1": [
+     "dagger",
+     "sword_short"
+    ],
+    "dual2": [
+     "dagger",
+     "sword_short"
+    ]
+   },
+   "bruxo": {
+    "staff": [
+     "staff"
+    ],
+    "sword": [
+     "sword_long"
+    ],
+    "focus": [
+     "focus"
+    ]
+   },
+   "druida": {
+    "staff": [
+     "staff"
+    ]
+   },
+   "necromante": {
+    "main_hand": [
+     "scythe",
+     "wand"
+    ],
+    "off_hand": [
+     "focus"
+    ]
+   },
+   "guerreiro": {
+    "blunt": [
+     "mace2h"
+    ],
+    "slashing": [
+     "sword2h",
+     "axe2h"
+    ],
+    "dual1": [
+     "dagger",
+     "sword_short",
+     "axe1h"
+    ],
+    "dual2": [
+     "dagger",
+     "sword_short",
+     "axe1h"
+    ]
+   }
+  },
+  "LABELS": {
+   "helmet": "CAPACETE",
+   "chest": "PEITORAL",
+   "gloves": "LUVAS",
+   "pants": "CALÇA",
+   "boots": "BOTAS",
+   "amulet": "AMULETO",
+   "ring1": "ANEL 1",
+   "ring2": "ANEL 2",
+   "blunt": "CONCUSSÃO",
+   "slashing": "CORTE",
+   "dual1": "RÁPIDA 1",
+   "dual2": "RÁPIDA 2",
+   "staff": "CAJADO",
+   "wand": "VARINHA",
+   "focus": "FOCO",
+   "main_hand": "ARMA PRINC.",
+   "off_hand": "FOCO",
+   "greatsword": "ESPADA LONGA 2M",
+   "sword": "ESPADA",
+   "shield": "ESCUDO",
+   "ranged": "ARCO / BESTA"
+  },
+  "SUPPORT_SLOTS": [
+   "focus",
+   "off_hand",
+   "shield"
+  ]
+ },
+ "legendary": {
+  "CATALOG": {
+   "bone_command": [
+    "Comando do Ossuário",
+    "necromante",
+    "Esqueletos causam 20% de dano adicional."
+   ],
+   "grave_guard": [
+    "Vigília da Sepultura",
+    "necromante",
+    "Conjurar concede escudo de 8% da vida máxima."
+   ],
+   "echo": [
+    "Eco das Cinzas",
+    null,
+    "Básicos atingem outro alvo próximo com 25% do dano."
+   ],
+   "siphon": [
+    "Sede do Vazio",
+    null,
+    "Recupera 5% do dano básico como vida."
+   ],
+   "focus": [
+    "Foco Rúnico",
+    null,
+    "Básicos geram 3 de recurso adicional."
+   ],
+   "bulwark": [
+    "Bastião do Peregrino",
+    null,
+    "Poções concedem escudo de 12% da vida máxima."
+   ],
+   "celerity": [
+    "Passos do Vento",
+    null,
+    "Esquiva recarrega 20% mais rápido."
+   ],
+   "devastation": [
+    "Lâmina Devastadora",
+    null,
+    "15% de dano básico adicional."
+   ],
+   "resonance": [
+    "Ressonância Profunda",
+    null,
+    "15% de dano de habilidades adicional."
+   ],
+   "quake_echo": [
+    "Tremor Ancestral",
+    "barbaro",
+    "Básicos causam um tremor secundário de 30% em alvo próximo."
+   ],
+   "ancestral_guard": [
+    "Guarda dos Ancestrais",
+    "barbaro",
+    "Reduz em 10% o dano recebido."
+   ],
+   "arcane_conduit": [
+    "Conduto Arcano",
+    "mago",
+    "Básicos saltam para outro alvo com 40% do dano."
+   ],
+   "frost_ward": [
+    "Prisma Glacial",
+    "mago",
+    "Conjurar concede escudo de 8% da vida máxima."
+   ],
+   "radiant_verdict": [
+    "Veredito Radiante",
+    "paladino",
+    "Habilidades causam 20% de dano adicional."
+   ],
+   "oath_guard": [
+    "Égide do Juramento",
+    "paladino",
+    "Reduz em 10% o dano recebido."
+   ],
+   "marked_hunt": [
+    "Caçada Implacável",
+    "ladino",
+    "25% de dano adicional contra o alvo marcado."
+   ],
+   "shadow_step": [
+    "Passo do Eclipse",
+    "ladino",
+    "Esquiva recarrega 25% mais rápido."
+   ],
+   "soul_feast": [
+    "Banquete das Almas",
+    "bruxo",
+    "Básicos drenam 8% do dano como vida."
+   ],
+   "void_brand": [
+    "Colheita Umbral",
+    "bruxo",
+    "Matar um inimigo concede 6 de recurso adicional."
+   ],
+   "living_roots": [
+    "Casca Viva",
+    "druida",
+    "Conjurar concede escudo de 8% da vida máxima."
+   ],
+   "stormcaller": [
+    "Arauto da Tempestade",
+    "druida",
+    "Básicos saltam para outro alvo com 35% do dano."
+   ]
+  }
+ },
+ "necro_affixes": {
+  "AFFIXES": {
+   "minion_damage": [
+    "DANO DOS LACAIOS",
+    6,
+    2.0
+   ],
+   "minion_health": [
+    "VIDA DOS LACAIOS",
+    8,
+    2.4
+   ],
+   "minion_count": [
+    "LÂMINA ADICIONAL",
+    1,
+    0.0
+   ],
+   "corpse_reach": [
+    "ALCANCE DE CADÁVER",
+    1,
+    0.02
+   ],
+   "dot_damage": [
+    "DANO AO LONGO DO TEMPO",
+    6,
+    2.0
+   ],
+   "shadow": [
+    "DANO SOMBRIO",
+    5,
+    1.8
+   ],
+   "blood": [
+    "DANO SANGUÍNEO",
+    5,
+    1.8
+   ],
+   "bone": [
+    "DANO ÓSSEO",
+    5,
+    1.8
+   ],
+   "cooldown": [
+    "RECARGA MENOR",
+    3,
+    0.6
+   ],
+   "crit": [
+    "CHANCE CRÍTICA",
+    2,
+    0.5
+   ],
+   "fortify": [
+    "FORTIFICAÇÃO GERADA",
+    6,
+    2.0
+   ],
+   "barrier": [
+    "BARREIRA GERADA",
+    6,
+    2.0
+   ],
+   "control": [
+    "DURAÇÃO DE CONTROLE",
+    5,
+    1.5
+   ]
+  },
+  "PERCENT": [
+   "barrier",
+   "blood",
+   "bone",
+   "control",
+   "cooldown",
+   "crit",
+   "dot_damage",
+   "fortify",
+   "minion_damage",
+   "minion_health",
+   "shadow"
+  ],
+  "CAPS": {
+   "minion_count": 2,
+   "corpse_reach": 3,
+   "cooldown": 40,
+   "crit": 30
+  },
+  "TAG": {
+   "shadow": "Sombra",
+   "blood": "Sangue",
+   "bone": "Osso"
+  }
+ },
+ "itemdata": {
+  "EQUIPMENT": [
+   "weapon",
+   "armor",
+   "accessory"
+  ],
+  "DURABILITY_MAX": 100,
+  "DEATH_LOSS": 10,
+  "QUALITY_MAX": 25,
+  "QUALITY_STEP": 0.015,
+  "QUALITY_SPECIAL": 25,
+  "MAXIMIZE_BONUS": 0.5,
+  "SPECIAL_MATERIAL": "material:essencia_primordial",
+  "SOCKET_LIMITS": {
+   "helmet": 2,
+   "chest": 2,
+   "pants": 2,
+   "one_hand": 1,
+   "focus": 1,
+   "two_hand": 2,
+   "amulet": 1,
+   "ring": 1,
+   "gloves": 0,
+   "boots": 0,
+   "shield": 0
+  }
+ },
+ "gems": {
+  "GRADES": [
+   "Bruta",
+   "Lascada",
+   "Normal",
+   "Impecável",
+   "Real",
+   "Grandiosa"
+  ],
+  "FAMILIES": {
+   "rubi": [
+    "Rubi",
+    {
+     "weapon": [
+      "damage.fire_holy",
+      [
+       0.14,
+       0.16,
+       0.18,
+       0.2,
+       0.22,
+       0.24
+      ]
+     ],
+     "armor": [
+      "strength",
+      [
+       10,
+       20,
+       30,
+       40,
+       60,
+       90
+      ]
+     ],
+     "jewelry": [
+      "resistance.fire",
+      [
+       50,
+       250,
+       450,
+       900,
+       1750,
+       2625
+      ]
+     ]
+    }
+   ],
+   "topazio": [
+    "Topázio",
+    {
+     "weapon": [
+      "damage.lightning",
+      [
+       0.14,
+       0.16,
+       0.18,
+       0.2,
+       0.22,
+       0.24
+      ]
+     ],
+     "armor": [
+      "intelligence",
+      [
+       10,
+       20,
+       30,
+       40,
+       60,
+       90
+      ]
+     ],
+     "jewelry": [
+      "resistance.lightning",
+      [
+       50,
+       250,
+       450,
+       900,
+       1750,
+       2625
+      ]
+     ]
+    }
+   ],
+   "safira": [
+    "Safira",
+    {
+     "weapon": [
+      "damage.cold",
+      [
+       0.14,
+       0.16,
+       0.18,
+       0.2,
+       0.22,
+       0.24
+      ]
+     ],
+     "armor": [
+      "willpower",
+      [
+       10,
+       20,
+       30,
+       40,
+       60,
+       90
+      ]
+     ],
+     "jewelry": [
+      "resistance.cold",
+      [
+       50,
+       250,
+       450,
+       900,
+       1750,
+       2625
+      ]
+     ]
+    }
+   ],
+   "esmeralda": [
+    "Esmeralda",
+    {
+     "weapon": [
+      "damage.poison",
+      [
+       0.14,
+       0.16,
+       0.18,
+       0.2,
+       0.22,
+       0.24
+      ]
+     ],
+     "armor": [
+      "dexterity",
+      [
+       10,
+       20,
+       30,
+       40,
+       60,
+       90
+      ]
+     ],
+     "jewelry": [
+      "resistance.poison",
+      [
+       50,
+       250,
+       450,
+       900,
+       1750,
+       2625
+      ]
+     ]
+    }
+   ],
+   "diamante": [
+    "Diamante",
+    {
+     "weapon": [
+      "damage.all",
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ]
+     ],
+     "armor": [
+      "all_attributes",
+      [
+       4,
+       7,
+       10,
+       13,
+       20,
+       30
+      ]
+     ],
+     "jewelry": [
+      "resistance.all",
+      [
+       7,
+       35,
+       65,
+       125,
+       250,
+       375
+      ]
+     ]
+    }
+   ],
+   "caveira": [
+    "Caveira",
+    {
+     "weapon": [
+      "damage.physical",
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ]
+     ],
+     "armor": [
+      "healing_received",
+      [
+       0.04,
+       0.06,
+       0.08,
+       0.1,
+       0.15,
+       0.225
+      ]
+     ],
+     "jewelry": [
+      "resistance.physical",
+      [
+       50,
+       250,
+       null,
+       900,
+       1750,
+       2625
+      ]
+     ]
+    }
+   ],
+   "ametista": [
+    "Ametista",
+    {
+     "weapon": [
+      "damage.shadow",
+      [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ]
+     ],
+     "armor": [
+      "barrier_generation",
+      [
+       0.02,
+       0.04,
+       0.06,
+       0.08,
+       0.12,
+       0.18
+      ]
+     ],
+     "jewelry": [
+      "resistance.shadow",
+      [
+       50,
+       250,
+       450,
+       900,
+       1750,
+       2625
+      ]
+     ]
+    }
+   ]
+  },
+  "STAT_NAMES": {
+   "damage.fire_holy": "dano ígneo e sagrado",
+   "damage.lightning": "dano elétrico",
+   "damage.cold": "dano gélido",
+   "damage.poison": "dano de veneno",
+   "damage.all": "todo o dano",
+   "damage.physical": "dano físico",
+   "damage.shadow": "dano sombrio",
+   "strength": "Força",
+   "intelligence": "Inteligência",
+   "willpower": "Vontade",
+   "dexterity": "Destreza",
+   "all_attributes": "todos os atributos",
+   "healing_received": "cura recebida",
+   "barrier_generation": "geração de barreira",
+   "resistance.fire": "resistência ígnea",
+   "resistance.lightning": "resistência elétrica",
+   "resistance.cold": "resistência gélida",
+   "resistance.poison": "resistência a veneno",
+   "resistance.all": "resistência a todos os elementos",
+   "resistance.physical": "resistência física",
+   "resistance.shadow": "resistência sombria"
+  }
+ },
+ "temper": {
+  "RECIPES": {
+   "vitalidade": [
+    "Vitalidade",
+    "armor",
+    "health",
+    60,
+    90
+   ],
+   "fortaleza": [
+    "Fortaleza",
+    "armor",
+    "defense",
+    6,
+    10
+   ],
+   "furia": [
+    "Fúria",
+    "weapon",
+    "attack",
+    6,
+    10
+   ],
+   "fluxo": [
+    "Fluxo",
+    "jewelry",
+    "mana",
+    10,
+    16
+   ]
+  },
+  "STARTING": [
+   "vitalidade",
+   "fortaleza"
+  ],
+  "RESETS": {
+   "chest": 3
+  },
+  "DEFAULT_RESETS": 3,
+  "COST": {
+   "material:poeira_tempera": 1
+  },
+  "GOLD": 400,
+  "STAT_NAMES": {
+   "health": "vida máxima",
+   "defense": "armadura",
+   "attack": "ataque",
+   "mana": "recurso máximo"
+  }
+ },
+ "enchant": {
+  "KEYS": [
+   "attack",
+   "defense",
+   "health",
+   "mana"
+  ],
+  "NAMES": {
+   "attack": "ataque",
+   "defense": "armadura",
+   "health": "vida",
+   "mana": "recurso"
+  },
+  "BASE_GOLD": 600,
+  "GROWTH": 1.5
+ },
+ "recycle": {
+  "VALUABLE": [
+   "Lendário",
+   "Único",
+   "Único Mítico"
+  ],
+  "MODES": [
+   "junk",
+   "Comum",
+   "Mágico",
+   "Raro",
+   "all"
+  ],
+  "QUESTION": "Tem certeza de que deseja reciclar estes equipamentos?"
+ },
+ "materials": {
+  "CATALOG": {
+   "material:poeira_tempera": [
+    "Poeira de têmpera",
+    "Raro",
+    "Aplicar e redefinir têmperas",
+    "Reciclagem de itens raros ou melhores"
+   ],
+   "material:ferragem_engaste": [
+    "Ferragem de engaste",
+    "Mágico",
+    "Adicionar engastes",
+    "Reciclagem de itens mágicos ou melhores"
+   ],
+   "material:essencia_primordial": [
+    "Essência primordial",
+    "Lendário",
+    "Qualidade +25",
+    "Conteúdo de nível 60 ou mais (ainda sem fonte)"
+   ],
+   "material:fragmento_chave": [
+    "Fragmento de chave",
+    "Mágico",
+    "Criar chaves de masmorra",
+    "Ainda sem fonte"
+   ]
+  },
+  "RECYCLE_YIELD": {
+   "Comum": {},
+   "Mágico": {
+    "material:ferragem_engaste": 1
+   },
+   "Raro": {
+    "material:poeira_tempera": 1,
+    "material:ferragem_engaste": 1
+   },
+   "Lendário": {
+    "material:poeira_tempera": 3,
+    "material:ferragem_engaste": 1
+   },
+   "Único": {
+    "material:poeira_tempera": 5,
+    "material:ferragem_engaste": 2
+   },
+   "Único Mítico": {
+    "material:poeira_tempera": 8,
+    "material:ferragem_engaste": 3
+   }
+  }
+ },
+ "codex": {
+  "CATEGORIES": [
+   "Ofensivo",
+   "Defensivo",
+   "Utilidade",
+   "Mobilidade",
+   "Recurso"
+  ],
+  "ASPECT_CATEGORY": {
+   "bone_command": "Ofensivo",
+   "grave_guard": "Defensivo",
+   "echo": "Ofensivo",
+   "siphon": "Defensivo",
+   "focus": "Recurso",
+   "bulwark": "Defensivo",
+   "celerity": "Mobilidade",
+   "devastation": "Ofensivo",
+   "resonance": "Ofensivo",
+   "quake_echo": "Ofensivo",
+   "ancestral_guard": "Defensivo",
+   "arcane_conduit": "Ofensivo",
+   "frost_ward": "Defensivo",
+   "radiant_verdict": "Ofensivo",
+   "oath_guard": "Defensivo",
+   "marked_hunt": "Ofensivo",
+   "shadow_step": "Mobilidade",
+   "soul_feast": "Utilidade",
+   "void_brand": "Recurso",
+   "living_roots": "Defensivo",
+   "stormcaller": "Ofensivo"
+  },
+  "SLOT_CATEGORIES": {
+   "helmet": [
+    "Defensivo",
+    "Utilidade"
+   ],
+   "ring": [
+    "Ofensivo",
+    "Recurso"
+   ],
+   "amulet": [
+    "Ofensivo",
+    "Defensivo",
+    "Utilidade",
+    "Mobilidade",
+    "Recurso"
+   ],
+   "one_hand": [
+    "Ofensivo",
+    "Recurso"
+   ],
+   "two_hand": [
+    "Ofensivo",
+    "Recurso"
+   ],
+   "chest": [
+    "Defensivo",
+    "Utilidade"
+   ],
+   "pants": [
+    "Defensivo",
+    "Utilidade"
+   ],
+   "gloves": [
+    "Ofensivo",
+    "Utilidade"
+   ],
+   "boots": [
+    "Mobilidade",
+    "Defensivo"
+   ],
+   "focus": [
+    "Recurso",
+    "Defensivo"
+   ],
+   "shield": [
+    "Recurso",
+    "Defensivo"
+   ]
+  },
+  "ENGRAVE_RARITIES": [
+   "Raro",
+   "Lendário"
+  ],
+  "ENGRAVE_GOLD": 1200
+ },
+ "jeweler": {
+  "CREATE_COUNT": 3,
+  "SOCKET_COST": {
+   "material:ferragem_engaste": 1
+  }
+ },
+ "forge": {
+  "ASPECTS": {
+   "echo": [
+    "Eco das Cinzas",
+    "Básicos atingem outro alvo próximo com 25% do dano."
+   ],
+   "siphon": [
+    "Sede do Vazio",
+    "Recupera 5% do dano básico como vida."
+   ],
+   "focus": [
+    "Foco Rúnico",
+    "Básicos geram 3 de recurso adicional."
+   ],
+   "bone_command": [
+    "Comando do Ossuário",
+    "Esqueletos causam 20% de dano adicional."
+   ],
+   "grave_guard": [
+    "Vigília da Sepultura",
+    "Conjurar concede escudo de 8% da vida máxima."
+   ],
+   "bulwark": [
+    "Bastião do Peregrino",
+    "Poções concedem escudo de 12% da vida máxima."
+   ],
+   "celerity": [
+    "Passos do Vento",
+    "Esquiva recarrega 20% mais rápido."
+   ],
+   "devastation": [
+    "Lâmina Devastadora",
+    "15% de dano básico adicional."
+   ],
+   "resonance": [
+    "Ressonância Profunda",
+    "15% de dano de habilidades adicional."
+   ],
+   "quake_echo": [
+    "Tremor Ancestral",
+    "Básicos causam um tremor secundário de 30% em alvo próximo."
+   ],
+   "ancestral_guard": [
+    "Guarda dos Ancestrais",
+    "Reduz em 10% o dano recebido."
+   ],
+   "arcane_conduit": [
+    "Conduto Arcano",
+    "Básicos saltam para outro alvo com 40% do dano."
+   ],
+   "frost_ward": [
+    "Prisma Glacial",
+    "Conjurar concede escudo de 8% da vida máxima."
+   ],
+   "radiant_verdict": [
+    "Veredito Radiante",
+    "Habilidades causam 20% de dano adicional."
+   ],
+   "oath_guard": [
+    "Égide do Juramento",
+    "Reduz em 10% o dano recebido."
+   ],
+   "marked_hunt": [
+    "Caçada Implacável",
+    "25% de dano adicional contra o alvo marcado."
+   ],
+   "shadow_step": [
+    "Passo do Eclipse",
+    "Esquiva recarrega 25% mais rápido."
+   ],
+   "soul_feast": [
+    "Banquete das Almas",
+    "Básicos drenam 8% do dano como vida."
+   ],
+   "void_brand": [
+    "Colheita Umbral",
+    "Matar um inimigo concede 6 de recurso adicional."
+   ],
+   "living_roots": [
+    "Casca Viva",
+    "Conjurar concede escudo de 8% da vida máxima."
+   ],
+   "stormcaller": [
+    "Arauto da Tempestade",
+    "Básicos saltam para outro alvo com 35% do dano."
+   ]
+  }
+ },
+ "pages": {
+  "CAPACITY": 30,
+  "PAGES": [
+   "equipment",
+   "gems",
+   "consumables",
+   "keys"
+  ],
+  "NAMES": {
+   "equipment": "Equipamentos",
+   "gems": "Gemas",
+   "consumables": "Consumíveis",
+   "keys": "Chaves de masmorra"
+  },
+  "ATTR": {
+   "equipment": "items",
+   "gems": "gems",
+   "consumables": "consumables",
+   "keys": "keys"
+  },
+  "EQUIPMENT": [
+   "weapon",
+   "armor",
+   "accessory"
+  ],
+  "POTION_CAP": 5,
+  "STACK_MAX": 99
+ },
+ "lost": {
+  "MAX": 10
+ }
+}

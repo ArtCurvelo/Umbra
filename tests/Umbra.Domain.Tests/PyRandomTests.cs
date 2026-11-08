@@ -20,4 +20,17 @@ public class PyRandomTests
         var letters = "abcdefg".ToCharArray();
         Assert.Equal(choices, new string(Enumerable.Range(0, 5).Select(_ => rng.Choice(letters)).ToArray()));
     }
+
+    /// <summary>random.seed(s); 12 x choices('ABCD', weights=[40,28,29,3]); 4 x sample(13 letters, 3); 2 x sample(26 letters, 7).</summary>
+    [Theory]
+    [InlineData(3L, "ABABBAACAADB", "ihg,kcd,kci,gla", "vycfsbj,yaiptmn")]
+    [InlineData(99L, "BAAACAACBCBB", "jmd,mfg,kdc,hkc", "skcwqxp,kmbiran")]
+    public void WeightedAndSampleAsCPython(long seed, string weighted, string small, string large)
+    {
+        var rng = new PyRandom(seed); var abcd = "ABCD".ToCharArray(); var weights = new double[] { 40, 28, 29, 3 };
+        Assert.Equal(weighted, new string(Enumerable.Range(0, 12).Select(_ => rng.Weighted(abcd, weights)).ToArray()));
+        var thirteen = "abcdefghijklm".ToCharArray(); var alphabet = "abcdefghijklmnopqrstuvwxyz".ToCharArray();
+        Assert.Equal(small, string.Join(",", Enumerable.Range(0, 4).Select(_ => new string(rng.Sample(thirteen, 3).ToArray()))));
+        Assert.Equal(large, string.Join(",", Enumerable.Range(0, 2).Select(_ => new string(rng.Sample(alphabet, 7).ToArray()))));
+    }
 }

@@ -65,7 +65,7 @@ public static class Tuning
             Apply(result, picked.Sub("ops")!); chosen.Add(picked.Str("name"));
         }
         foreach (var key in Integer)
-            if (result.TryGetValue(key, out var v) && v is double or bool) result[key] = (double)Math.Max(0, PyMath.Round(Py.Num(v)));
+            if (result.TryGetValue(key, out var v) && v is double or long or bool) result[key] = (double)Math.Max(0, PyMath.Round(Py.Num(v)));
         if (result.Str("category") == "Básica") result["cost"] = 0.0;
         return result;
     }
