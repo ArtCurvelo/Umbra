@@ -1,0 +1,12 @@
+{
+ "umbra_commit": "425c03ced50861c404cb64cf2d627f9d144068b6",
+ "umbra_branch": "release/0.17.0-reforge",
+ "files": {
+  "classes.json": "16e9212864ba398903a5219b8903e67ad17af68e4806a3f92d6ab02251042abc",
+  "enemies.json": "3b6bb8a19f164721916e3fe1cdfa589b1ae6be0ba01dd783f4fee29eb8ed89ee",
+  "bosses.json": "cf48500961239f9939a35b511d7abc35637bbaf4587a20e6ffc4681fcb92b999",
+  "items.json": "85cb2ea6303e3651055c7177307984d128558136d9e35ad198d8d057b030843b",
+  "skills.json": "06d51fbe895d8f7b03979d2fdb491916ee968bfb2d25e7a4e641bc1cd735d695",
+  "rules.json": "2ae7b275ef9c1714ab4fb20c8e18c1084782bfc235d2b69db78457f87cfb3613"
+ }
+}

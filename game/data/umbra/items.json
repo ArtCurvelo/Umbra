@@ -1,0 +1,405 @@
+{
+ "version": 3,
+ "rarities": [
+  "Comum",
+  "Incomum",
+  "Raro",
+  "Épico",
+  "Lendário"
+ ],
+ "equipment_slots": [
+  "weapon",
+  "armor",
+  "accessory"
+ ],
+ "inventory_capacity": 24,
+ "catalog": {
+  "weapons": [
+   [
+    "Machado do Carrasco",
+    8
+   ],
+   [
+    "Lâmina de Cinzas",
+    7
+   ],
+   [
+    "Espadão do Exílio",
+    10
+   ],
+   [
+    "Foice da Lua Morta",
+    8
+   ],
+   [
+    "Martelo do Juramento",
+    9
+   ],
+   [
+    "Adaga do Silêncio",
+    6
+   ],
+   [
+    "Cajado das Sete Runas",
+    8
+   ],
+   [
+    "Orbe do Vazio",
+    7
+   ],
+   [
+    "Lança do Primeiro Sol",
+    9
+   ],
+   [
+    "Arco do Caçador Cinzento",
+    8
+   ],
+   [
+    "Machado Duplo do Frenesi",
+    11
+   ],
+   [
+    "Espada do Rei Afogado",
+    12
+   ],
+   [
+    "Cetro da Tempestade",
+    10
+   ],
+   [
+    "Punhal Carmesim",
+    9
+   ],
+   [
+    "Cajado da Raiz Antiga",
+    10
+   ],
+   [
+    "Lâmina do Eclipse",
+    13
+   ],
+   [
+    "Quebra-Almas",
+    14
+   ],
+   [
+    "Agulha Espectral",
+    11
+   ],
+   [
+    "Báculo do Último Pacto",
+    13
+   ],
+   [
+    "Mandíbula do Colosso",
+    15
+   ]
+  ],
+  "armors": [
+   [
+    "Couro Reforçado",
+    4
+   ],
+   [
+    "Cota das Cinzas",
+    6
+   ],
+   [
+    "Peitoral do Vigia",
+    7
+   ],
+   [
+    "Manto do Oráculo",
+    4
+   ],
+   [
+    "Armadura Abissal",
+    9
+   ],
+   [
+    "Couraça do Carrasco",
+    10
+   ],
+   [
+    "Vestes de Geada",
+    5
+   ],
+   [
+    "Malha do Juramento",
+    8
+   ],
+   [
+    "Traje do Predador",
+    6
+   ],
+   [
+    "Manto de Espinhos",
+    7
+   ],
+   [
+    "Placas do Colosso",
+    12
+   ],
+   [
+    "Armadura do Sol Partido",
+    11
+   ],
+   [
+    "Pele do Urso Ancestral",
+    10
+   ],
+   [
+    "Véu do Bruxo",
+    8
+   ],
+   [
+    "Casca do Mundo",
+    11
+   ],
+   [
+    "Couraça Rubra",
+    13
+   ],
+   [
+    "Manto Astral",
+    9
+   ],
+   [
+    "Armadura do Rei Afogado",
+    14
+   ],
+   [
+    "Veste do Eclipse",
+    12
+   ],
+   [
+    "Égide das Profundezas",
+    15
+   ]
+  ],
+  "accessories": [
+   [
+    "Anel das Cinzas",
+    {
+     "attack": 2,
+     "health": 8
+    }
+   ],
+   [
+    "Amuleto do Vigia",
+    {
+     "defense": 2,
+     "health": 12
+    }
+   ],
+   [
+    "Selo Arcano",
+    {
+     "mana": 18,
+     "attack": 1
+    }
+   ],
+   [
+    "Pingente Voraz",
+    {
+     "attack": 3,
+     "mana": 6
+    }
+   ],
+   [
+    "Medalhão do Guardião",
+    {
+     "defense": 3,
+     "health": 10
+    }
+   ],
+   [
+    "Marca do Berserker",
+    {
+     "attack": 5,
+     "health": 12
+    }
+   ],
+   [
+    "Olho do Oráculo",
+    {
+     "attack": 4,
+     "mana": 12
+    }
+   ],
+   [
+    "Broche do Andarilho",
+    {
+     "defense": 2,
+     "health": 18
+    }
+   ],
+   [
+    "Dente do Predador",
+    {
+     "attack": 4,
+     "defense": 1
+    }
+   ],
+   [
+    "Coração de Carvalho",
+    {
+     "health": 25,
+     "defense": 2
+    }
+   ],
+   [
+    "Fragmento de Alma",
+    {
+     "attack": 3,
+     "mana": 20
+    }
+   ],
+   [
+    "Selo da Tempestade",
+    {
+     "attack": 5,
+     "defense": 2
+    }
+   ],
+   [
+    "Anel da Colheita",
+    {
+     "health": 14,
+     "mana": 10
+    }
+   ],
+   [
+    "Ídolo do Vazio",
+    {
+     "attack": 6,
+     "health": 6
+    }
+   ],
+   [
+    "Lágrima Solar",
+    {
+     "defense": 4,
+     "health": 16
+    }
+   ],
+   [
+    "Medalhão do Eclipse",
+    {
+     "attack": 7,
+     "defense": 3
+    }
+   ],
+   [
+    "Raiz Imortal",
+    {
+     "health": 30,
+     "defense": 3
+    }
+   ],
+   [
+    "Coroa de Ossos",
+    {
+     "attack": 5,
+     "health": 20
+    }
+   ],
+   [
+    "Cicatriz do Pacto",
+    {
+     "attack": 8,
+     "mana": 8
+    }
+   ],
+   [
+    "Runas do Fim",
+    {
+     "attack": 6,
+     "defense": 5
+    }
+   ]
+  ]
+ },
+ "loot": {
+  "normal_enemy": {
+   "resource_orb": 55,
+   "potion": 18,
+   "gold": 17,
+   "equipment": 31
+  },
+  "boss_guaranteed": [
+   "potion",
+   "gold",
+   "weapon",
+   "accessory",
+   "resource_orb",
+   "relic"
+  ],
+  "chest": {
+   "gold": 35,
+   "potion": 25,
+   "weapon": 17,
+   "armor": 15,
+   "accessory": 8
+  }
+ },
+ "relics": {
+  "Guardião das Cinzas": {
+   "name": "Brasa do Primeiro Carrasco",
+   "stats": {
+    "attack": 2,
+    "defense": 2
+   }
+  },
+  "Cavaleiro Rubro": {
+   "name": "Selo do Juramento Sangrento",
+   "stats": {
+    "attack": 4,
+    "defense": 1
+   }
+  },
+  "Oráculo do Vazio": {
+   "name": "Lente do Observador",
+   "stats": {
+    "attack": 3,
+    "defense": 1
+   }
+  },
+  "Colosso Ossário": {
+   "name": "Osso do Rei dos Restos",
+   "stats": {
+    "attack": 1,
+    "defense": 4
+   }
+  },
+  "Rainha Vésper": {
+   "name": "Coração da Tecelã",
+   "stats": {
+    "attack": 3,
+    "defense": 2
+   }
+  },
+  "O Devorador": {
+   "name": "Mandíbula da Fome",
+   "stats": {
+    "attack": 5,
+    "defense": 1
+   }
+  },
+  "Dragão Cinzento": {
+   "name": "Escama das Asas da Ruína",
+   "stats": {
+    "attack": 4,
+    "defense": 3
+   }
+  },
+  "Rei Sem Sol": {
+   "name": "Coroa do Último Trono",
+   "stats": {
+    "attack": 5,
+    "defense": 3
+   }
+  }
+ }
+}

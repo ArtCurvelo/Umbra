@@ -1,0 +1,205 @@
+{
+ "version": 1,
+ "enemies": {
+  "sombra": {
+   "name": "Sombra",
+   "health": 25,
+   "attack": 6,
+   "defense": 0,
+   "color": [
+    155,
+    45,
+    65
+   ],
+   "move_cooldown": 15,
+   "detection": 7,
+   "windup": 20
+  },
+  "bruto": {
+   "name": "Bruto Abissal",
+   "health": 65,
+   "attack": 14,
+   "defense": 2,
+   "color": [
+    170,
+    85,
+    45
+   ],
+   "move_cooldown": 32,
+   "detection": 6,
+   "windup": 35
+  },
+  "rastejante": {
+   "name": "Rastejante",
+   "health": 18,
+   "attack": 5,
+   "defense": 0,
+   "color": [
+    80,
+    180,
+    105
+   ],
+   "move_cooldown": 8,
+   "detection": 8,
+   "windup": 12
+  },
+  "cultista": {
+   "name": "Cultista",
+   "health": 30,
+   "attack": 8,
+   "defense": 1,
+   "color": [
+    115,
+    85,
+    190
+   ],
+   "move_cooldown": 20,
+   "detection": 8,
+   "windup": 28,
+   "attack_range": 4
+  },
+  "espectro": {
+   "name": "Espectro Velado",
+   "health": 28,
+   "attack": 9,
+   "defense": 0,
+   "color": [
+    100,
+    175,
+    205
+   ],
+   "move_cooldown": 11,
+   "detection": 10,
+   "windup": 17
+  },
+  "arqueiro": {
+   "name": "Arqueiro Sepulcral",
+   "health": 27,
+   "attack": 11,
+   "defense": 0,
+   "color": [
+    185,
+    145,
+    85
+   ],
+   "move_cooldown": 24,
+   "detection": 11,
+   "windup": 29,
+   "attack_range": 6
+  },
+  "parasita": {
+   "name": "Parasita de Cinzas",
+   "health": 21,
+   "attack": 5,
+   "defense": 0,
+   "color": [
+    130,
+    185,
+    85
+   ],
+   "move_cooldown": 6,
+   "detection": 9,
+   "windup": 10
+  },
+  "guardiao": {
+   "name": "Guardião Partido",
+   "health": 92,
+   "attack": 13,
+   "defense": 5,
+   "color": [
+    145,
+    125,
+    105
+   ],
+   "move_cooldown": 38,
+   "detection": 7,
+   "windup": 40
+  },
+  "bruxa": {
+   "name": "Bruxa do Véu",
+   "health": 39,
+   "attack": 12,
+   "defense": 1,
+   "color": [
+    155,
+    85,
+    190
+   ],
+   "move_cooldown": 22,
+   "detection": 10,
+   "windup": 25,
+   "attack_range": 5
+  },
+  "cavaleiro_vazio": {
+   "name": "Cavaleiro do Vazio",
+   "health": 105,
+   "attack": 17,
+   "defense": 7,
+   "color": [
+    95,
+    85,
+    145
+   ],
+   "move_cooldown": 30,
+   "detection": 8,
+   "windup": 34
+  },
+  "acólito": {
+   "name": "Acólito das Cinzas",
+   "health": 42,
+   "attack": 13,
+   "defense": 2,
+   "color": [
+    175,
+    105,
+    75
+   ],
+   "move_cooldown": 24,
+   "detection": 10,
+   "windup": 26,
+   "attack_range": 4
+  },
+  "devorador_menor": {
+   "name": "Devorador Menor",
+   "health": 78,
+   "attack": 15,
+   "defense": 4,
+   "color": [
+    105,
+    145,
+    75
+   ],
+   "move_cooldown": 18,
+   "detection": 9,
+   "windup": 24
+  },
+  "sentinela_runica": {
+   "name": "Sentinela Rúnica",
+   "health": 88,
+   "attack": 14,
+   "defense": 8,
+   "color": [
+    75,
+    155,
+    175
+   ],
+   "move_cooldown": 34,
+   "detection": 8,
+   "windup": 32
+  },
+  "espreitador": {
+   "name": "Espreitador",
+   "health": 34,
+   "attack": 10,
+   "defense": 1,
+   "color": [
+    135,
+    65,
+    155
+   ],
+   "move_cooldown": 7,
+   "detection": 11,
+   "windup": 14
+  }
+ }
+}

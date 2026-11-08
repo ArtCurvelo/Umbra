@@ -47,3 +47,10 @@ O jogo abre no menu principal.
 Capturas de efeitos: `--fx golpe|ruptura|investida` (segura o efeito a 35% da vida). Guia visual: [docs/GUIA_VISUAL.md](docs/GUIA_VISUAL.md).
 Diagnóstico: `--nohud`, `--scale X`, `--lights N`, `--skip partes` (torches, walls, floor, props, enemies, env, hero, herolight, fx, moon,
 scaling, msaa, torchshadows, glow, moonshadow, post, measure).
+
+## Migração do UMBRA (Fase 5)
+Plano, método e estado: [docs/fase5/PLANO_FASE5.md](docs/fase5/PLANO_FASE5.md). Com o repositório do UMBRA ao lado deste:
+```powershell
+..\umbra-ashes-below\.venv\Scripts\python.exe tools\export_umbra_data.py        # dados -> game/data/umbra
+..\umbra-ashes-below\.venv\Scripts\python.exe tools\parity\status_parity.py    # casos de paridade -> tests/parity
+```

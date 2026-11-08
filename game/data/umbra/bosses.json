@@ -1,0 +1,233 @@
+{
+ "version": 1,
+ "bosses": {
+  "guardiao_cinzas": {
+   "name": "Guardião das Cinzas",
+   "title": "O Primeiro Carrasco",
+   "color": [
+    190,
+    85,
+    55
+   ],
+   "health": 450,
+   "attack": 18,
+   "defense": 5,
+   "reward_xp": 180,
+   "reward_gold": 100,
+   "abilities": [
+    "investida",
+    "impacto",
+    "onda_cinzas"
+   ],
+   "description": "Um antigo guardião consumido pelas chamas."
+  },
+  "cavaleiro_rubro": {
+   "name": "Cavaleiro Rubro",
+   "title": "O Juramento Sangrento",
+   "color": [
+    175,
+    35,
+    55
+   ],
+   "health": 700,
+   "attack": 25,
+   "defense": 10,
+   "reward_xp": 300,
+   "reward_gold": 180,
+   "abilities": [
+    "combo",
+    "corte_sanguineo",
+    "drenagem"
+   ],
+   "description": "Um guerreiro que sacrificou sua humanidade."
+  },
+  "oraculo_vazio": {
+   "name": "Oráculo do Vazio",
+   "title": "Aquele que Observa",
+   "color": [
+    115,
+    75,
+    190
+   ],
+   "health": 850,
+   "attack": 29,
+   "defense": 7,
+   "reward_xp": 450,
+   "reward_gold": 250,
+   "abilities": [
+    "projetil_vazio",
+    "zona_corrupcao",
+    "teleporte"
+   ],
+   "description": "Uma entidade que distorce o espaço ao seu redor."
+  },
+  "rainha_vesper": {
+   "name": "Rainha Vésper",
+   "title": "A Tecelã do Luto",
+   "color": [
+    145,
+    65,
+    175
+   ],
+   "health": 980,
+   "attack": 31,
+   "defense": 8,
+   "reward_xp": 520,
+   "reward_gold": 300,
+   "abilities": [
+    "zona_corrupcao",
+    "projetil_vazio",
+    "teleporte"
+   ],
+   "description": "Uma soberana que transforma lembranças em veneno."
+  },
+  "devorador": {
+   "name": "O Devorador",
+   "title": "A Fome Sem Nome",
+   "color": [
+    105,
+    125,
+    65
+   ],
+   "health": 1180,
+   "attack": 34,
+   "defense": 12,
+   "reward_xp": 650,
+   "reward_gold": 360,
+   "abilities": [
+    "drenagem",
+    "combo",
+    "pisao"
+   ],
+   "description": "Uma criatura que consome tudo o que encontra."
+  },
+  "dragao_cinzento": {
+   "name": "Dragão Cinzento",
+   "title": "Asas da Ruína",
+   "color": [
+    125,
+    105,
+    95
+   ],
+   "health": 1550,
+   "attack": 40,
+   "defense": 14,
+   "reward_xp": 850,
+   "reward_gold": 480,
+   "abilities": [
+    "onda_cinzas",
+    "investida",
+    "armadura_ossea"
+   ],
+   "description": "Um dragão ancestral coberto pelas cinzas do mundo."
+  },
+  "rei_sem_sol": {
+   "name": "Rei Sem Sol",
+   "title": "O Último Trono",
+   "color": [
+    190,
+    145,
+    65
+   ],
+   "health": 1900,
+   "attack": 46,
+   "defense": 17,
+   "reward_xp": 1100,
+   "reward_gold": 650,
+   "abilities": [
+    "corte_sanguineo",
+    "zona_corrupcao",
+    "pisao"
+   ],
+   "description": "O monarca final de um reino apagado da história."
+  },
+  "colosso_ossario": {
+   "name": "Colosso Ossário",
+   "title": "O Rei dos Restos",
+   "color": [
+    190,
+    185,
+    155
+   ],
+   "health": 1400,
+   "attack": 36,
+   "defense": 16,
+   "reward_xp": 700,
+   "reward_gold": 400,
+   "abilities": [
+    "pisao",
+    "invocar_esqueletos",
+    "armadura_ossea"
+   ],
+   "description": "Uma criatura colossal construída de milhares de ossos."
+  }
+ },
+ "boss_order": [
+  "guardiao_cinzas",
+  "cavaleiro_rubro",
+  "oraculo_vazio",
+  "colosso_ossario",
+  "rainha_vesper",
+  "devorador",
+  "dragao_cinzento",
+  "rei_sem_sol"
+ ],
+ "boss_relics": {
+  "Guardião das Cinzas": {
+   "name": "Brasa do Primeiro Carrasco",
+   "stats": {
+    "attack": 2,
+    "defense": 2
+   }
+  },
+  "Cavaleiro Rubro": {
+   "name": "Selo do Juramento Sangrento",
+   "stats": {
+    "attack": 4,
+    "defense": 1
+   }
+  },
+  "Oráculo do Vazio": {
+   "name": "Lente do Observador",
+   "stats": {
+    "attack": 3,
+    "defense": 1
+   }
+  },
+  "Colosso Ossário": {
+   "name": "Osso do Rei dos Restos",
+   "stats": {
+    "attack": 1,
+    "defense": 4
+   }
+  },
+  "Rainha Vésper": {
+   "name": "Coração da Tecelã",
+   "stats": {
+    "attack": 3,
+    "defense": 2
+   }
+  },
+  "O Devorador": {
+   "name": "Mandíbula da Fome",
+   "stats": {
+    "attack": 5,
+    "defense": 1
+   }
+  },
+  "Dragão Cinzento": {
+   "name": "Escama das Asas da Ruína",
+   "stats": {
+    "attack": 4,
+    "defense": 3
+   }
+  },
+  "Rei Sem Sol": {
+   "name": "Coroa do Último Trono",
+   "stats": {
+    "attack": 5,
+    "defense": 3
+   }
+  }
+ }
+}

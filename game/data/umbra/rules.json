@@ -1,0 +1,448 @@
+{
+ "status": {
+  "DOT": {
+   "burn": "fire",
+   "bleed": "physical",
+   "poison": "poison",
+   "decay": "shadow",
+   "corruption": "shadow"
+  },
+  "CONTROL": [
+   "stun",
+   "root",
+   "slow",
+   "taunt",
+   "blind",
+   "freeze",
+   "fear",
+   "numb"
+  ],
+  "BUFFS": [
+   "power",
+   "haste",
+   "swift",
+   "guard",
+   "regen",
+   "unstoppable",
+   "ward",
+   "bloodlust",
+   "steadfast",
+   "thorns",
+   "furyhide",
+   "carnage",
+   "torrent",
+   "avatar",
+   "laststand",
+   "chill",
+   "focus",
+   "next_hit",
+   "next_isolated",
+   "next_crit",
+   "resist",
+   "holy_power",
+   "thrift",
+   "trail",
+   "seed",
+   "martyr",
+   "demon_form",
+   "shadow_form",
+   "stealth",
+   "legion",
+   "brutal",
+   "ferocity",
+   "determination",
+   "unhindered"
+  ],
+  "TAGS": [
+   "prey",
+   "reaper",
+   "contagion",
+   "deathburst",
+   "eviscerated",
+   "sentence"
+  ],
+  "KINDS": [
+   "stun",
+   "root",
+   "slow",
+   "taunt",
+   "blind",
+   "freeze",
+   "fear",
+   "numb",
+   "vulnerable",
+   "intangible",
+   "barrier",
+   "burn",
+   "bleed",
+   "poison",
+   "decay",
+   "corruption",
+   "weaken",
+   "curse",
+   "mark",
+   "power",
+   "haste",
+   "swift",
+   "guard",
+   "regen",
+   "unstoppable",
+   "ward",
+   "bloodlust",
+   "steadfast",
+   "thorns",
+   "furyhide",
+   "carnage",
+   "torrent",
+   "avatar",
+   "laststand",
+   "chill",
+   "focus",
+   "next_hit",
+   "next_isolated",
+   "next_crit",
+   "resist",
+   "holy_power",
+   "thrift",
+   "trail",
+   "seed",
+   "martyr",
+   "demon_form",
+   "shadow_form",
+   "stealth",
+   "legion",
+   "brutal",
+   "ferocity",
+   "determination",
+   "unhindered",
+   "prey",
+   "reaper",
+   "contagion",
+   "deathburst",
+   "eviscerated",
+   "sentence",
+   "frost"
+  ],
+  "BOSS_IMMUNE": [
+   "freeze",
+   "fear"
+  ],
+  "FROST_SLOW": 0.005,
+  "FROST_BOSS_SLOW": 0.3,
+  "FREEZE_TICKS": 90,
+  "CORRUPTION_HEAL": 0.2,
+  "CAPS": {
+   "slow": 0.7,
+   "vulnerable": 1.0,
+   "weaken": 0.6,
+   "guard": 0.6,
+   "haste": 1.0,
+   "swift": 0.6,
+   "power": 2.0,
+   "resist": 0.5,
+   "holy_power": 2.0,
+   "thrift": 1.0,
+   "chill": 0.7
+  },
+  "HARMFUL": [
+   "stun",
+   "root",
+   "slow",
+   "taunt",
+   "blind",
+   "freeze",
+   "fear",
+   "numb",
+   "vulnerable",
+   "burn",
+   "bleed",
+   "poison",
+   "decay",
+   "corruption",
+   "weaken",
+   "curse",
+   "mark"
+  ],
+  "TICK": 30,
+  "MAX_STACKS": 5,
+  "MAX_TICKS": 6000,
+  "BOSS_FACTOR": 0.5,
+  "PRESSURE_STEP": 0.25,
+  "IMMUNE_AT": 4,
+  "PRESSURE_DECAY": 180,
+  "SAVED": [
+   "stun",
+   "root",
+   "slow",
+   "vulnerable",
+   "barrier",
+   "burn",
+   "bleed",
+   "poison",
+   "decay",
+   "corruption",
+   "blind",
+   "weaken",
+   "curse",
+   "mark",
+   "prey",
+   "reaper",
+   "deathburst",
+   "frost",
+   "freeze",
+   "numb"
+  ]
+ },
+ "elements": {
+  "NAMES": {
+   "physical": "Físico",
+   "fire": "Fogo",
+   "cold": "Gelo",
+   "lightning": "Raio",
+   "poison": "Veneno",
+   "shadow": "Sombra",
+   "holy": "Sagrado",
+   "arcane": "Arcano"
+  },
+  "COLORS": {
+   "physical": [
+    211,
+    186,
+    146
+   ],
+   "fire": [
+    245,
+    121,
+    48
+   ],
+   "cold": [
+    110,
+    211,
+    252
+   ],
+   "lightning": [
+    177,
+    178,
+    255
+   ],
+   "poison": [
+    133,
+    205,
+    77
+   ],
+   "shadow": [
+    184,
+    116,
+    224
+   ],
+   "holy": [
+    248,
+    220,
+    131
+   ],
+   "arcane": [
+    255,
+    119,
+    153
+   ]
+  },
+  "CLASS_POOL": {
+   "barbaro": [
+    "physical"
+   ],
+   "mago": [
+    "fire",
+    "cold",
+    "lightning"
+   ],
+   "ladino": [
+    "physical",
+    "poison"
+   ],
+   "paladino": [
+    "physical",
+    "holy"
+   ],
+   "bruxo": [
+    "shadow",
+    "fire"
+   ],
+   "druida": [
+    "physical",
+    "poison",
+    "lightning"
+   ],
+   "necromante": [
+    "physical",
+    "shadow"
+   ]
+  },
+  "PROFILES": {
+   "espectro": {
+    "shadow": 0.35,
+    "holy": -0.2
+   },
+   "sombra": {
+    "shadow": 0.25,
+    "holy": -0.15
+   },
+   "parasita": {
+    "poison": 0.5,
+    "fire": -0.2
+   },
+   "bruxa": {
+    "shadow": 0.2
+   },
+   "sentinela_runica": {
+    "lightning": 0.35
+   }
+  }
+ },
+ "rarity": {
+  "ORDER": [
+   "Comum",
+   "Mágico",
+   "Raro",
+   "Lendário",
+   "Único",
+   "Único Mítico"
+  ],
+  "LEGACY": {
+   "Incomum": "Mágico",
+   "Épico": "Raro"
+  },
+  "DROPPABLE": [
+   "Comum",
+   "Mágico",
+   "Raro",
+   "Lendário"
+  ],
+  "TIER": {
+   "Comum": 0,
+   "Mágico": 1,
+   "Raro": 2,
+   "Lendário": 4,
+   "Único": 4,
+   "Único Mítico": 4
+  },
+  "TAG": {
+   "Comum": "C",
+   "Mágico": "M",
+   "Raro": "R",
+   "Lendário": "L",
+   "Único": "U",
+   "Único Mítico": "UM"
+  },
+  "FRAME": {
+   "Comum": 1,
+   "Mágico": 2,
+   "Raro": 2,
+   "Lendário": 3,
+   "Único": 3,
+   "Único Mítico": 4
+  },
+  "MULTIPLIER": {
+   "Comum": 1.0,
+   "Mágico": 1.12,
+   "Raro": 1.26,
+   "Lendário": 1.62,
+   "Único": 1.62,
+   "Único Mítico": 1.62
+  },
+  "SUPERIOR": "Lendário Primordial"
+ },
+ "palette": {
+  "DEFAULT": {
+   "rarity.Comum": [
+    196,
+    196,
+    200
+   ],
+   "rarity.Mágico": [
+    70,
+    140,
+    255
+   ],
+   "rarity.Raro": [
+    250,
+    222,
+    70
+   ],
+   "rarity.Lendário": [
+    255,
+    128,
+    32
+   ],
+   "rarity.Único": [
+    176,
+    112,
+    56
+   ],
+   "rarity.Único Mítico": [
+    170,
+    80,
+    240
+   ],
+   "element.physical": [
+    211,
+    186,
+    146
+   ],
+   "element.fire": [
+    245,
+    121,
+    48
+   ],
+   "element.cold": [
+    110,
+    211,
+    252
+   ],
+   "element.lightning": [
+    177,
+    178,
+    255
+   ],
+   "element.poison": [
+    133,
+    205,
+    77
+   ],
+   "element.shadow": [
+    184,
+    116,
+    224
+   ],
+   "element.holy": [
+    248,
+    220,
+    131
+   ],
+   "element.arcane": [
+    255,
+    119,
+    153
+   ],
+   "status.good": [
+    110,
+    210,
+    120
+   ],
+   "status.bad": [
+    220,
+    70,
+    70
+   ],
+   "unit.enemy": [
+    210,
+    56,
+    56
+   ],
+   "unit.ally": [
+    90,
+    200,
+    120
+   ]
+  }
+ }
+}

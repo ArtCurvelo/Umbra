@@ -1,0 +1,896 @@
+{
+ "version": 1,
+ "classes": {
+  "barbaro": {
+   "label": "Bárbaro",
+   "health": 190,
+   "mana": 0,
+   "attack": 22,
+   "defense": 8,
+   "color": [
+    190,
+    75,
+    55
+   ],
+   "resource": "fury",
+   "resource_label": "FÚRIA",
+   "resource_max": 100,
+   "resource_regen": 0.0,
+   "description": "Fúria cresce no combate e é recolhida dos inimigos derrotados."
+  },
+  "mago": {
+   "label": "Mago",
+   "health": 85,
+   "mana": 160,
+   "attack": 28,
+   "defense": 2,
+   "color": [
+    95,
+    125,
+    225
+   ],
+   "resource": "mana",
+   "resource_label": "MANA",
+   "resource_max": 160,
+   "resource_regen": 0.16,
+   "description": "Domina feitiços arcanos com uma grande reserva de mana."
+  },
+  "ladino": {
+   "label": "Ladino",
+   "health": 115,
+   "mana": 0,
+   "attack": 15,
+   "defense": 4,
+   "color": [
+    70,
+    185,
+    125
+   ],
+   "resource": "energy",
+   "resource_label": "ENERGIA",
+   "resource_max": 100,
+   "resource_regen": 0.2,
+   "description": "Gera energia com ataques e movimentos precisos."
+  },
+  "paladino": {
+   "label": "Paladino",
+   "health": 175,
+   "mana": 0,
+   "attack": 15,
+   "defense": 10,
+   "color": [
+    220,
+    190,
+    90
+   ],
+   "resource": "faith",
+   "resource_label": "FÉ",
+   "resource_max": 100,
+   "resource_regen": 0.04,
+   "description": "Converte combate e proteção em poder sagrado."
+  },
+  "bruxo": {
+   "label": "Bruxo",
+   "health": 110,
+   "mana": 0,
+   "attack": 25,
+   "defense": 3,
+   "color": [
+    155,
+    85,
+    190
+   ],
+   "resource": "shards",
+   "resource_label": "IRA",
+   "resource_max": 100,
+   "resource_regen": 0.0,
+   "description": "Converte a Ira do combate em maldições, formas e demônios."
+  },
+  "druida": {
+   "label": "Druida",
+   "health": 135,
+   "mana": 0,
+   "attack": 21,
+   "defense": 6,
+   "color": [
+    95,
+    165,
+    105
+   ],
+   "resource": "essence",
+   "resource_label": "ESSÊNCIA",
+   "resource_max": 120,
+   "resource_regen": 0.06,
+   "description": "Canaliza a essência viva para curar e devastar."
+  },
+  "necromante": {
+   "label": "Necromante",
+   "health": 105,
+   "mana": 0,
+   "attack": 23,
+   "defense": 3,
+   "color": [
+    111,
+    185,
+    161
+   ],
+   "resource": "death_essence",
+   "resource_label": "ESSÊNCIA",
+   "resource_max": 100,
+   "resource_regen": 0.03,
+   "description": "Gera essência com ossos e sangue; comanda esqueletos e consome cadáveres."
+  }
+ },
+ "basic_skills": {
+  "barbaro": [
+   {
+    "id": "barb_cleave",
+    "name": "Talho Selvagem",
+    "description": "Um corte amplo e pesado.",
+    "multiplier": 0.82,
+    "range": 1,
+    "resource_gain": 7,
+    "effect": "cleave"
+   },
+   {
+    "id": "barb_crush",
+    "name": "Esmagamento",
+    "description": "Golpe lento com impacto brutal.",
+    "multiplier": 1.18,
+    "range": 1,
+    "resource_gain": 9,
+    "effect": "stagger"
+   },
+   {
+    "id": "barb_rend",
+    "name": "Dilacerar",
+    "description": "Ataque que pune alvos feridos.",
+    "multiplier": 0.94,
+    "range": 1,
+    "resource_gain": 8,
+    "effect": "execution"
+   },
+   {
+    "id": "barb_throw",
+    "name": "Machado Arremessado",
+    "description": "Arremessa uma arma curta à distância.",
+    "multiplier": 0.72,
+    "range": 3,
+    "resource_gain": 6,
+    "effect": "ranged"
+   }
+  ],
+  "mago": [
+   {
+    "id": "mage_spark",
+    "name": "Faísca Arcana",
+    "description": "Projétil rápido de baixo custo.",
+    "multiplier": 0.72,
+    "range": 4,
+    "resource_gain": 4,
+    "effect": "ranged"
+   },
+   {
+    "id": "mage_staff",
+    "name": "Bastão Rúnico",
+    "description": "Ataque físico reforçado pelo arcano.",
+    "multiplier": 0.92,
+    "range": 1,
+    "resource_gain": 5,
+    "effect": "melee"
+   },
+   {
+    "id": "mage_frost_shard",
+    "name": "Estilhaço Glacial",
+    "description": "Fragmento de gelo perfurante.",
+    "multiplier": 0.86,
+    "range": 4,
+    "resource_gain": 5,
+    "effect": "pierce"
+   },
+   {
+    "id": "mage_arc_bolt",
+    "name": "Arco Voltaico",
+    "description": "Descarga que salta para um alvo próximo.",
+    "multiplier": 0.78,
+    "range": 3,
+    "resource_gain": 4,
+    "effect": "chain"
+   }
+  ],
+  "ladino": [
+   {
+    "id": "rogue_quick_cut",
+    "name": "Corte Rápido",
+    "description": "Golpe veloz que gera energia.",
+    "multiplier": 0.68,
+    "range": 1,
+    "resource_gain": 9,
+    "effect": "fast"
+   },
+   {
+    "id": "rogue_puncture",
+    "name": "Perfuração",
+    "description": "Ataque preciso contra um alvo.",
+    "multiplier": 1.08,
+    "range": 1,
+    "resource_gain": 7,
+    "effect": "pierce"
+   },
+   {
+    "id": "rogue_knife",
+    "name": "Faca Oculta",
+    "description": "Arremesso de curto alcance.",
+    "multiplier": 0.78,
+    "range": 3,
+    "resource_gain": 6,
+    "effect": "ranged"
+   },
+   {
+    "id": "rogue_flurry",
+    "name": "Dança de Lâminas",
+    "description": "Dois cortes leves em sequência.",
+    "multiplier": 0.82,
+    "range": 1,
+    "resource_gain": 8,
+    "effect": "double"
+   }
+  ],
+  "paladino": [
+   {
+    "id": "pala_strike",
+    "name": "Golpe de Juramento",
+    "description": "Ataque equilibrado que gera fé.",
+    "multiplier": 0.82,
+    "range": 1,
+    "resource_gain": 7,
+    "effect": "melee"
+   },
+   {
+    "id": "pala_hammer",
+    "name": "Martelo Devoto",
+    "description": "Impacto contundente.",
+    "multiplier": 1.12,
+    "range": 1,
+    "resource_gain": 8,
+    "effect": "stagger"
+   },
+   {
+    "id": "pala_spear",
+    "name": "Lança Radiante",
+    "description": "Estocada de luz a curta distância.",
+    "multiplier": 0.92,
+    "range": 2,
+    "resource_gain": 6,
+    "effect": "pierce"
+   },
+   {
+    "id": "pala_sweep",
+    "name": "Varredura Sagrada",
+    "description": "Corte em arco contra inimigos próximos.",
+    "multiplier": 0.72,
+    "range": 1,
+    "resource_gain": 7,
+    "effect": "cleave"
+   }
+  ],
+  "bruxo": [
+   {
+    "id": "warlock_drain",
+    "name": "Toque Drenante",
+    "description": "Drena vitalidade com um toque sombrio.",
+    "multiplier": 0.82,
+    "range": 3,
+    "resource_gain": 6,
+    "effect": "drain"
+   },
+   {
+    "id": "warlock_bolt",
+    "name": "Raio Umbral",
+    "description": "Projétil de energia profana.",
+    "multiplier": 0.9,
+    "range": 4,
+    "resource_gain": 5,
+    "effect": "ranged"
+   },
+   {
+    "id": "warlock_brand",
+    "name": "Marca Sombria",
+    "description": "Marca o alvo com energia residual.",
+    "multiplier": 0.78,
+    "range": 3,
+    "resource_gain": 7,
+    "effect": "brand"
+   },
+   {
+    "id": "warlock_claw",
+    "name": "Garra do Vazio",
+    "description": "Golpe próximo de energia condensada.",
+    "multiplier": 1.08,
+    "range": 1,
+    "resource_gain": 8,
+    "effect": "melee"
+   }
+  ],
+  "druida": [
+   {
+    "id": "druid_thorn",
+    "name": "Espinho Vivo",
+    "description": "Espinho lançado em linha.",
+    "multiplier": 0.84,
+    "range": 4,
+    "resource_gain": 6,
+    "effect": "ranged"
+   },
+   {
+    "id": "druid_staff",
+    "name": "Cajado Raiz",
+    "description": "Golpe físico que gera essência.",
+    "multiplier": 0.92,
+    "range": 1,
+    "resource_gain": 7,
+    "effect": "melee"
+   },
+   {
+    "id": "druid_wind",
+    "name": "Lâmina de Vento",
+    "description": "Corte de ar em curta distância.",
+    "multiplier": 0.78,
+    "range": 2,
+    "resource_gain": 6,
+    "effect": "cleave"
+   },
+   {
+    "id": "druid_seed",
+    "name": "Semente Explosiva",
+    "description": "Semente que detona no alvo.",
+    "multiplier": 1.0,
+    "range": 3,
+    "resource_gain": 5,
+    "effect": "ranged"
+   }
+  ]
+ },
+ "main_skills": {
+  "barbaro": [
+   {
+    "id": "barb_whirlwind",
+    "name": "Redemoinho",
+    "description": "Gira e atinge todos ao redor.",
+    "cost": 35,
+    "cooldown": 260,
+    "kind": "radius",
+    "multiplier": 1.1,
+    "range": 1,
+    "radius": 1
+   },
+   {
+    "id": "barb_seismic",
+    "name": "Ruptura Sísmica",
+    "description": "Abala uma área à frente.",
+    "cost": 45,
+    "cooldown": 330,
+    "kind": "radius",
+    "multiplier": 1.45,
+    "range": 2,
+    "radius": 2
+   },
+   {
+    "id": "barb_execution",
+    "name": "Execução",
+    "description": "Golpe devastador em um alvo.",
+    "cost": 40,
+    "cooldown": 300,
+    "kind": "single",
+    "multiplier": 2.15,
+    "range": 3,
+    "radius": 0
+   },
+   {
+    "id": "barb_leap",
+    "name": "Salto Devastador",
+    "description": "Salta até o alvo e causa dano em área.",
+    "cost": 50,
+    "cooldown": 360,
+    "kind": "target_radius",
+    "multiplier": 1.55,
+    "range": 4,
+    "radius": 1
+   },
+   {
+    "id": "barb_bloodrage",
+    "name": "Ira Sanguinária",
+    "description": "Aumenta o poder e recupera vida.",
+    "cost": 30,
+    "cooldown": 420,
+    "kind": "berserk",
+    "multiplier": 0.0,
+    "range": 0,
+    "radius": 0
+   },
+   {
+    "id": "barb_chain",
+    "name": "Corrente de Ferro",
+    "description": "Puxa e atinge inimigos em linha.",
+    "cost": 38,
+    "cooldown": 300,
+    "kind": "line",
+    "multiplier": 1.3,
+    "range": 4,
+    "radius": 0
+   },
+   {
+    "id": "barb_earthshatter",
+    "name": "Terra Partida",
+    "description": "Esmaga uma grande área.",
+    "cost": 65,
+    "cooldown": 480,
+    "kind": "radius",
+    "multiplier": 1.85,
+    "range": 2,
+    "radius": 2
+   },
+   {
+    "id": "barb_last_stand",
+    "name": "Último Fôlego",
+    "description": "Ganha escudo e resistência temporária.",
+    "cost": 55,
+    "cooldown": 540,
+    "kind": "shield",
+    "multiplier": 0.0,
+    "range": 0,
+    "radius": 0
+   }
+  ],
+  "mago": [
+   {
+    "id": "mage_frost_lance",
+    "name": "Lança Glacial",
+    "description": "Perfura uma linha de inimigos.",
+    "cost": 28,
+    "cooldown": 220,
+    "kind": "line",
+    "multiplier": 1.35,
+    "range": 5,
+    "radius": 0
+   },
+   {
+    "id": "mage_meteor",
+    "name": "Chuva Estelar",
+    "description": "Invoca um meteoro em área.",
+    "cost": 48,
+    "cooldown": 360,
+    "kind": "target_radius",
+    "multiplier": 1.65,
+    "range": 5,
+    "radius": 2
+   },
+   {
+    "id": "mage_blink",
+    "name": "Dobra Espacial",
+    "description": "Teleporte curto e escudo breve.",
+    "cost": 24,
+    "cooldown": 260,
+    "kind": "blink",
+    "multiplier": 0.0,
+    "range": 4,
+    "radius": 0
+   },
+   {
+    "id": "mage_chain_lightning",
+    "name": "Arco Voltaico",
+    "description": "Encadeia raios entre inimigos.",
+    "cost": 38,
+    "cooldown": 280,
+    "kind": "chain",
+    "multiplier": 1.05,
+    "range": 5,
+    "radius": 0
+   },
+   {
+    "id": "mage_flame_wave",
+    "name": "Onda Ígnea",
+    "description": "Cone de fogo diante do mago.",
+    "cost": 34,
+    "cooldown": 300,
+    "kind": "line",
+    "multiplier": 1.18,
+    "range": 4,
+    "radius": 0
+   },
+   {
+    "id": "mage_mirror",
+    "name": "Prisma Arcano",
+    "description": "Escudo que devolve parte do dano.",
+    "cost": 42,
+    "cooldown": 420,
+    "kind": "shield",
+    "multiplier": 0.0,
+    "range": 0,
+    "radius": 0
+   },
+   {
+    "id": "mage_black_hole",
+    "name": "Singularidade",
+    "description": "Atrai e fere inimigos próximos.",
+    "cost": 62,
+    "cooldown": 500,
+    "kind": "radius",
+    "multiplier": 1.75,
+    "range": 3,
+    "radius": 2
+   },
+   {
+    "id": "mage_overload",
+    "name": "Sobrecarga",
+    "description": "Explosão arcana centrada no alvo.",
+    "cost": 55,
+    "cooldown": 440,
+    "kind": "target_radius",
+    "multiplier": 1.95,
+    "range": 5,
+    "radius": 1
+   }
+  ],
+  "ladino": [
+   {
+    "id": "rogue_backstab",
+    "name": "Punhalada",
+    "description": "Ataque crítico contra um alvo.",
+    "cost": 24,
+    "cooldown": 210,
+    "kind": "single",
+    "multiplier": 1.75,
+    "range": 3,
+    "radius": 0
+   },
+   {
+    "id": "rogue_poison_flurry",
+    "name": "Rajada Tóxica",
+    "description": "Sequência de golpes venenosos.",
+    "cost": 30,
+    "cooldown": 260,
+    "kind": "flurry",
+    "multiplier": 0.62,
+    "range": 1,
+    "radius": 0
+   },
+   {
+    "id": "rogue_smoke",
+    "name": "Bomba de Fumaça",
+    "description": "Escudo e desorientação ao redor.",
+    "cost": 26,
+    "cooldown": 320,
+    "kind": "shield",
+    "multiplier": 0.0,
+    "range": 0,
+    "radius": 0
+   },
+   {
+    "id": "rogue_shadowstep",
+    "name": "Passo Sombrio",
+    "description": "Reposiciona e golpeia.",
+    "cost": 32,
+    "cooldown": 280,
+    "kind": "blink_strike",
+    "multiplier": 1.35,
+    "range": 4,
+    "radius": 0
+   },
+   {
+    "id": "rogue_fan",
+    "name": "Leque de Lâminas",
+    "description": "Arremessa lâminas em vários alvos.",
+    "cost": 35,
+    "cooldown": 300,
+    "kind": "radius",
+    "multiplier": 0.95,
+    "range": 3,
+    "radius": 2
+   },
+   {
+    "id": "rogue_mark",
+    "name": "Marca da Presa",
+    "description": "Marca um alvo para dano aumentado.",
+    "cost": 28,
+    "cooldown": 340,
+    "kind": "mark",
+    "multiplier": 0.0,
+    "range": 5,
+    "radius": 0
+   },
+   {
+    "id": "rogue_execution",
+    "name": "Dança Final",
+    "description": "Executa alvo enfraquecido.",
+    "cost": 48,
+    "cooldown": 420,
+    "kind": "single",
+    "multiplier": 2.25,
+    "range": 3,
+    "radius": 0
+   },
+   {
+    "id": "rogue_vanish",
+    "name": "Desaparecer",
+    "description": "Fica protegido e ganha mobilidade.",
+    "cost": 38,
+    "cooldown": 420,
+    "kind": "shield",
+    "multiplier": 0.0,
+    "range": 0,
+    "radius": 0
+   }
+  ],
+  "paladino": [
+   {
+    "id": "pala_smite",
+    "name": "Martelo da Aurora",
+    "description": "Impacto sagrado concentrado.",
+    "cost": 28,
+    "cooldown": 230,
+    "kind": "single",
+    "multiplier": 1.65,
+    "range": 4,
+    "radius": 0
+   },
+   {
+    "id": "pala_consecrate",
+    "name": "Solo Consagrado",
+    "description": "Consagra uma área.",
+    "cost": 38,
+    "cooldown": 300,
+    "kind": "radius",
+    "multiplier": 1.1,
+    "range": 2,
+    "radius": 2
+   },
+   {
+    "id": "pala_aegis",
+    "name": "Muralha da Luz",
+    "description": "Cria escudo e cura.",
+    "cost": 34,
+    "cooldown": 360,
+    "kind": "heal_shield",
+    "multiplier": 0.0,
+    "range": 0,
+    "radius": 0
+   },
+   {
+    "id": "pala_reckoning",
+    "name": "Juízo Final",
+    "description": "Explosão sagrada ao redor.",
+    "cost": 52,
+    "cooldown": 420,
+    "kind": "radius_heal",
+    "multiplier": 1.45,
+    "range": 2,
+    "radius": 1
+   },
+   {
+    "id": "pala_charge",
+    "name": "Investida do Juramento",
+    "description": "Avança e atinge em linha.",
+    "cost": 32,
+    "cooldown": 270,
+    "kind": "line",
+    "multiplier": 1.25,
+    "range": 4,
+    "radius": 0
+   },
+   {
+    "id": "pala_sunburst",
+    "name": "Explosão Solar",
+    "description": "Clarão que fere inimigos próximos.",
+    "cost": 44,
+    "cooldown": 360,
+    "kind": "radius",
+    "multiplier": 1.4,
+    "range": 3,
+    "radius": 2
+   },
+   {
+    "id": "pala_bastion",
+    "name": "Bastião",
+    "description": "Escudo robusto e regeneração.",
+    "cost": 48,
+    "cooldown": 480,
+    "kind": "shield",
+    "multiplier": 0.0,
+    "range": 0,
+    "radius": 0
+   },
+   {
+    "id": "pala_verdict",
+    "name": "Veredito",
+    "description": "Golpe pesado contra inimigo marcado.",
+    "cost": 58,
+    "cooldown": 480,
+    "kind": "single",
+    "multiplier": 2.0,
+    "range": 4,
+    "radius": 0
+   }
+  ],
+  "bruxo": [
+   {
+    "id": "warlock_curse",
+    "name": "Maldição Devoradora",
+    "description": "Dano sombrio e drenagem.",
+    "cost": 24,
+    "cooldown": 240,
+    "kind": "drain_single",
+    "multiplier": 1.3,
+    "range": 4,
+    "radius": 0
+   },
+   {
+    "id": "warlock_soulfire",
+    "name": "Fogo das Almas",
+    "description": "Explosão profana em área.",
+    "cost": 36,
+    "cooldown": 300,
+    "kind": "target_radius",
+    "multiplier": 1.45,
+    "range": 5,
+    "radius": 1
+   },
+   {
+    "id": "warlock_demon",
+    "name": "Pacto Demoníaco",
+    "description": "Escudo de alma e bônus ofensivo.",
+    "cost": 32,
+    "cooldown": 390,
+    "kind": "shield",
+    "multiplier": 0.0,
+    "range": 0,
+    "radius": 0
+   },
+   {
+    "id": "warlock_rift",
+    "name": "Fenda do Vazio",
+    "description": "Abre uma fenda que atinge linha.",
+    "cost": 42,
+    "cooldown": 340,
+    "kind": "line",
+    "multiplier": 1.55,
+    "range": 5,
+    "radius": 0
+   },
+   {
+    "id": "warlock_harvest",
+    "name": "Colheita",
+    "description": "Drena vários alvos.",
+    "cost": 48,
+    "cooldown": 420,
+    "kind": "radius_heal",
+    "multiplier": 1.05,
+    "range": 3,
+    "radius": 2
+   },
+   {
+    "id": "warlock_hex",
+    "name": "Hex",
+    "description": "Marca um inimigo para receber mais dano.",
+    "cost": 22,
+    "cooldown": 330,
+    "kind": "mark",
+    "multiplier": 0.0,
+    "range": 5,
+    "radius": 0
+   },
+   {
+    "id": "warlock_sacrifice",
+    "name": "Sacrifício",
+    "description": "Consome vida para causar dano massivo.",
+    "cost": 0,
+    "cooldown": 500,
+    "kind": "sacrifice",
+    "multiplier": 2.2,
+    "range": 4,
+    "radius": 0
+   },
+   {
+    "id": "warlock_apocalypse",
+    "name": "Apocalipse Menor",
+    "description": "Tempestade de energia sombria.",
+    "cost": 68,
+    "cooldown": 520,
+    "kind": "radius",
+    "multiplier": 1.9,
+    "range": 4,
+    "radius": 3
+   }
+  ],
+  "druida": [
+   {
+    "id": "druid_roots",
+    "name": "Raízes Prendentes",
+    "description": "Fere e prende inimigos próximos.",
+    "cost": 24,
+    "cooldown": 240,
+    "kind": "radius",
+    "multiplier": 1.05,
+    "range": 3,
+    "radius": 1
+   },
+   {
+    "id": "druid_storm",
+    "name": "Tempestade Verde",
+    "description": "Raios naturais em cadeia.",
+    "cost": 34,
+    "cooldown": 290,
+    "kind": "chain",
+    "multiplier": 1.15,
+    "range": 5,
+    "radius": 0
+   },
+   {
+    "id": "druid_bloom",
+    "name": "Florescer",
+    "description": "Cura e cria proteção.",
+    "cost": 30,
+    "cooldown": 360,
+    "kind": "heal_shield",
+    "multiplier": 0.0,
+    "range": 0,
+    "radius": 0
+   },
+   {
+    "id": "druid_moonfire",
+    "name": "Fogo Lunar",
+    "description": "Explosão em alvo distante.",
+    "cost": 42,
+    "cooldown": 340,
+    "kind": "target_radius",
+    "multiplier": 1.5,
+    "range": 5,
+    "radius": 1
+   },
+   {
+    "id": "druid_form",
+    "name": "Forma Selvagem",
+    "description": "Aumenta vida e ataque temporariamente.",
+    "cost": 36,
+    "cooldown": 420,
+    "kind": "berserk",
+    "multiplier": 0.0,
+    "range": 0,
+    "radius": 0
+   },
+   {
+    "id": "druid_tornado",
+    "name": "Tornado",
+    "description": "Atinge todos em uma área ampla.",
+    "cost": 48,
+    "cooldown": 400,
+    "kind": "radius",
+    "multiplier": 1.35,
+    "range": 3,
+    "radius": 2
+   },
+   {
+    "id": "druid_rebirth",
+    "name": "Renascimento",
+    "description": "Cura poderosa e escudo.",
+    "cost": 55,
+    "cooldown": 520,
+    "kind": "heal_shield",
+    "multiplier": 0.0,
+    "range": 0,
+    "radius": 0
+   },
+   {
+    "id": "druid_worldroot",
+    "name": "Raiz do Mundo",
+    "description": "Explosão natural devastadora.",
+    "cost": 65,
+    "cooldown": 520,
+    "kind": "radius",
+    "multiplier": 1.85,
+    "range": 4,
+    "radius": 3
+   }
+  ]
+ }
+}
