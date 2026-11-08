@@ -1,1 +1,2 @@
 game/data/umbra/*.json -text
+tests/parity/*.json -text

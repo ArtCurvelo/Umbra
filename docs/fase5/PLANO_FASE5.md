@@ -44,8 +44,9 @@ Regras do documento de direção:
 | 5.1 | Dados (classes, inimigos, chefes, itens, catálogos de habilidades 0.16, tabelas de regras) | **Feito** (2026-11-08) |
 | 5.2 | Estados de combate e dano tipado (`status.py`, `elements.py`) | **Feito, com paridade** (2026-11-08) |
 | 5.3 | Recursos compartilhados (Barreira em camadas, Fortificação, Orbes de Sangue, acúmulos: `resources.py`) | **Feito, com paridade** (2026-11-08) |
-| 5.4 | Motor de habilidades v16 (formas, efeitos, condições, mundo por tick, aliados: `combat_system/v16`, 1 439 linhas) e opções C/E/T | Próximo |
-| 5.5 | Árvore e graus reais, passivas de classe (substitui os graus PROVISÓRIOS da slice) | Pendente |
+| 5.4 | Motor de habilidades v16 (formas, efeitos, condições, mundo por tick) e opções C/E/T, para as 5 classes sem invocações | **Feito, com paridade** (2026-11-08) |
+| 5.4b | O resto do motor: invocações, cadáveres e Jaula (`allies.py`, formas `summon`/`corpse`/`cage`), junto com o Bruxo e o Necromante | Entra na 5.8 |
+| 5.5 | Árvore e graus reais, passivas de classe (substitui os graus PROVISÓRIOS da slice) | Próximo |
 | 5.6 | Itens da Reforge: raridades, afixos, gemas, engastes, forja, baú, materiais (substitui os itens PROVISÓRIOS da slice) | Pendente |
 | 5.7 | Inimigos e chefes (IA, habilidades dos chefes) | Pendente |
 | 5.8 | Classes, uma por vez (Bárbaro primeiro; Necromante por último, com lacaios e Grimório) | Pendente |
@@ -57,13 +58,22 @@ Regras do documento de direção:
 - **`Status.Apply`:** falta a proteção "Sacrificial" do Bruxo (`warlock.protected`). Entra com a classe (5.8).
 - **`Elements.DefenseFactor`:** as passivas de classe chegam pelo gancho `Elements.IncomingFactor` (5.5).
 - **`Elements.Deal`:**
-  - falta a recompensa de abate de alvo marcado (`skill_procs.mark_reward`), que entra com as habilidades (5.4);
+  - falta a recompensa de abate de alvo marcado (`skill_procs.mark_reward`). Ela depende de campos que o herói grava (`_marked_target`, `mark_kill_resource`), e por isso entra com as classes (5.8);
   - som e lista de eventos de acerto são apresentação e são ligados no Godot.
 - **`Resources`:**
   - os afixos de item do Necromante (`necro_affixes.share`: barreira, fortificação) chegam pelo gancho `Resources.AffixShare` (5.6);
   - os bônus de sacrifício do Grimório (`grimoire.bonus`: velocidade de ataque, armadura) chegam por `Resources.GrimoireBonus` (5.8);
   - ganhar recurso ao beber um orbe é regra do herói (`IHero.GainResource`: bônus da árvore e passivas de classe), ligada com a árvore (5.5);
   - desenhar os orbes é apresentação (Godot); a posição do herói em tiles (`IHero.X/Y`) é ligada à slice com o mundo (5.9).
+- **Motor de habilidades (`Combat/V16`):** o que pertence a outras etapas chega por `ISkillHooks` (padrão neutro em `NeutralHooks`):
+  - passivas de classe (dano, duração, cura, barreira, custo em vida, corrente, eventos de acerto/lançamento/abate/esquiva): 5.5;
+  - bônus por etiqueta, Grimório e afixos de item: 5.6;
+  - regras do Bruxo e do Necromante (ações, condições, zonas, formas `summon`/`corpse`/`cage`, ações `swap`/`ally_intangible`): 5.8 (5.4b).
+- **Fora do domínio (apresentação, no Godot):** `skill_started_at`, som do lançamento, `del motion` do Retorno.
+- **Ligação com a slice:** o combate da slice ainda usa o modelo da Fase 2. Pôr o Bárbaro nas regras reais (cooldowns, recurso, golpe básico com preparação) é a 5.8.
+- **Gatilhos que o jogo chama e o domínio não decide:**
+  - o canal dura enquanto a tecla está segura (`world.poll_hold` → `SkillState.Hold`), ligado à entrada no Godot;
+  - a recarga por tick de `skill_cooldowns` é do herói (UMBRA a faz no `update` do jogador), entra com as classes.
 
 ## Entrega 5.1 + 5.2 (2026-11-08)
 - **Arquivos novos:**
@@ -106,3 +116,40 @@ Regras do documento de direção:
   - alcance do orbe de 0 tile em vez de 1: 20 falham;
   - Fortificação durando 1 tick a menos: 108 falham.
 - **Sem efeito no jogo ainda:** nenhuma habilidade da slice gera Barreira, Fortificação, orbes ou acúmulos. Eles entram com as habilidades (5.4) e as classes (5.8).
+
+## Entrega 5.4 (2026-11-08)
+- **Arquivos novos:**
+  - `src/Umbra.Domain/Util/PyRandom.cs`: o gerador do `random` do Python (Mersenne Twister), sorteio por sorteio, para a paridade;
+  - `src/Umbra.Domain/Skills/PyDict.cs` (habilidade como dados abertos, com `get` e verdade do Python) e `Tuning.cs` (graus e opções C/E/T);
+  - `src/Umbra.Domain/Combat/V16/`: `Geometry.cs` (com a linha de visão), `Conditions.cs`, `Contracts.cs` (`ITarget`, `ISkillUser`, `SkillState`, `ISkillHooks`), `Engine.cs` (contexto, dano, custos, recargas, cargas, `Cast`, `Strike`), `Shapes.cs`, `Riders.cs`, `World.cs` e `WorldTick.cs` (zonas, torres, minas, golpes atrasados, efeitos com fim, auras, canais, mortes, estados do herói);
+  - `tools/parity/skills_parity.py`, `tests/parity/skills_cases.json`, testes `ParitySkillsTests.cs` e `PyRandomTests.cs`.
+- **Paridade: 198 sequências (8 550 operações) iguais ao Python.** Depois de cada passo são conferidos:
+  - o retorno e a habilidade resolvida (grau e opções);
+  - o herói inteiro: vida, recurso, posição, estados, recargas, cargas, acúmulos, imbuição, rampa, zonas, eventos, efeitos, auras e canal;
+  - cada um dos 7 inimigos.
+- **Cobertura:**
+  - todas as 45 habilidades do Bárbaro, Mago, Ladino, Paladino e Druida, cada uma com 10 combinações de opções e graus de 1 a 6;
+  - 150 sequências aleatórias com graus de 1 a 15;
+  - casos de santuário, recurso insuficiente, mira, paredes e linha de visão, e projéteis extras em leque.
+- **Ganchos verificados como neutros:** o roteiro embrulha cada função das passivas, etiquetas, Grimório, afixos, Bruxo e Necromante, e falha se alguma devolver algo diferente do neutro ou mexer no herói. Assim os casos medem só o motor.
+- **Gerador aleatório:** 6 sementes conferidas contra o CPython 3.14 (`random`, `randint`, `choice`).
+- **Testes: xUnit 543/543; autoteste do Godot 35/35.**
+- **Prova de mutação:**
+
+  | Erro inserido | Sequências que falham |
+  |---|---|
+  | graus +13% em vez de +12% | 180 |
+  | pulso de zona a cada 31 ticks | 142 |
+  | estado próprio da aura 1 tick mais curto | 40 |
+  | queda da corrente já no 1º alvo | 35 |
+  | crítico garantido ×1,4 | 3 |
+  | meteoros sorteados em −5..4 | 3 |
+  | chance dos efeitos ×0,9 | 2 |
+  | cone dos projéteis extras 0,55 em vez de 0,3 | 1 |
+
+- **Mutações sem efeito possível** (nenhuma entrada consegue distingui-las, por isso foram trocadas por outras na mesma linha):
+  - o padrão 0,85 da queda da corrente: os catálogos sempre dão o valor;
+  - o cone 0,30 contra 0,31: nenhum tile inteiro ao alcance cai entre os dois;
+  - `>=` contra `>` na chance: só difere se o sorteio cair exatamente no valor.
+- **Falha que o teste de mutação encontrou na primeira versão dos casos:** nenhum caso exercitava o cone dos projéteis extras. Foi acrescentado o caso do leque da Rajada.
+- **Sem efeito no jogo ainda:** o combate da slice continua com o modelo da Fase 2. Ligar o Bárbaro às regras reais é a 5.8.
