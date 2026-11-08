@@ -38,6 +38,8 @@ from game.equipment import necro_affixes                                        
 import game.sound.api as sound_api                                              # noqa: E402
 
 sound_api.play_sfx = lambda *a, **k: None
+import pygame  # noqa: E402
+pygame.time.get_ticks = lambda: CLOCK[0] * 1000 // 60          # Convergência Arcana reads the clock: one tick = 1/60 s
 elements.EVENTS.clear()
 old_catalog.V16_ACTIVE = True                       # the game turns it on at bootstrap (activate_v16)
 CLASSES = ('barbaro', 'mago', 'ladino', 'paladino', 'druida')
@@ -45,6 +47,10 @@ ROWS = {s['id']: s for c in CLASSES for s in catalog.SKILLS[c]}
 
 
 # ------------------------------------------------------------------ neutral hooks (asserted)
+PASSIVES_ON = [False]
+CLOCK = [0]
+
+
 class HookUsed(AssertionError):
     pass
 
@@ -61,6 +67,7 @@ def neutral(module, name, expected=None, check=None, void=False):
     original = getattr(module, name)
 
     def wrapper(*args, **kwargs):
+        if module is passives and PASSIVES_ON[0]: return original(*args, **kwargs)     # 5.5: real class passives
         before = light(HERO[0]) if HERO else None
         result = original(*args, **kwargs)
         if void and HERO and light(HERO[0]) != before: raise HookUsed(f'{module.__name__}.{name} changed the hero')
@@ -189,6 +196,9 @@ def hero_state(p):
         'absorbed': float(getattr(p, 'absorbed_total', 0)), 'last': d.get('last_skill_id'), 'anim': d.get('last_skill_anim'),
         'targets': [pos(t) for t in d.get('skill_target_positions', [])], 'direction': pos(d.get('skill_direction')),
         'hold': bool(d.get('v16_hold', False)), 'recalcs': p.recalcs, 'last_dash': d.get('v16_last_dash', 0),
+        'pbuffs': [[k, r[0], float(r[1])] for k, r in (d.get('v16_pbuffs') or {}).items()],
+        'streak': [d.get('v16_streak', 0), d.get('v16_streak_ticks', 0)], 'family': d.get('v16_last_family'),
+        'elements': [[e, t] for e, t in d.get('v16_elements', [])], 'bastion': d.get('v16_bastion_ticks', 0),
     }
     if world:
         state['world'] = {
@@ -224,15 +234,17 @@ SPECS = {}
 def resolve(p, op):
     row = ROWS[op['skill']]; tree = p.skill_tree
     keys = tuning.option_keys(row['id'])
-    tree.unlocked = {'learn:' + row['id']} | {keys[i] for i in op['picks']}
-    tree.ranks = {'learn:' + row['id']: op['rank']}
+    base_unlocked, base_ranks = set(tree.unlocked), dict(tree.ranks)
+    tree.unlocked = base_unlocked | {'learn:' + row['id']} | {keys[i] for i in op['picks']}
+    tree.ranks = {**base_ranks, 'learn:' + row['id']: op['rank']}
     tree.nodes = {k: {'kind': 'option'} for k in keys}
     spec = tuning.resolved(p, row)
-    tree.unlocked, tree.ranks, tree.nodes = set(), {}, {}
+    tree.unlocked, tree.ranks, tree.nodes = base_unlocked, base_ranks, {}
     return spec
 
 
 def tick(engine):
+    CLOCK[0] += 1
     v16world.tick(engine)
     for e in [engine.player] + engine.enemies: status.tick(e)
     p = engine.player
@@ -266,9 +278,12 @@ def run(op, engine):
     raise ValueError(kind)
 
 
-def record(name, ops, seed, shield=False):
-    random.seed(seed)
+def record(name, ops, seed, shield=False, cls=None, ranks=None):
+    random.seed(seed); CLOCK[0] = 0; PASSIVES_ON[0] = ranks is not None
     engine = Engine(shield); ENGINE[:] = [engine]; HERO[:] = [engine.player]
+    if ranks is not None:
+        p = engine.player; p.player_class = cls
+        p.skill_tree.unlocked = {'class:' + k for k, v in ranks.items() if v}; p.skill_tree.ranks = {'class:' + k: v for k, v in ranks.items() if v}
     steps = []
     for op in ops:
         try:
@@ -284,7 +299,8 @@ def record(name, ops, seed, shield=False):
             if SPECS.setdefault(key, spec) != spec: raise ValueError('same options, different resolution: ' + key)
             step['spec'] = key
         steps.append(step)
-    return {'name': name, 'seed': seed, 'shield': shield, 'steps': steps}
+    PASSIVES_ON[0] = False
+    return {'name': name, 'seed': seed, 'shield': shield, 'class': cls, 'ranks': ranks, 'steps': steps}
 
 
 # ------------------------------------------------------------------ cases
@@ -357,8 +373,35 @@ def randomized(count, length, seed):
     return cases
 
 
+def with_passives(per_class, length, seed):
+    """5.5: each class with its own skills and its 6 class passives at random ranks (real passives.py)."""
+    rng = random.Random(seed); names = [e[0] for e in ENEMIES]; cases = []
+    for cls in CLASSES:
+        skills = [s['id'] for s in catalog.SKILLS[cls]]
+        for c in range(per_class):
+            ranks = {row['id']: rng.choice([0, 1, 2, 3, 3]) for row in catalog.PASSIVES[cls]}
+            ops = [dict(op='hurt', amount=rng.choice([0, 150, 300, 380]))]
+            for _ in range(length):
+                r = rng.random()
+                if r < .42:
+                    sid = rng.choice(skills); n = len(ROWS[sid]['options'])
+                    picks = sorted({rng.choice([0, 1, 2])} | ({rng.choice([3, 4])} if rng.random() < .5 else set())) if n and rng.random() < .6 else []
+                    if ROWS[sid]['shape'] == 'melee': ops.append(dict(op='strike', skill=sid, rank=rng.randint(1, 8), picks=picks, target=rng.choice(names), factor=1.))
+                    else: ops.append(C(sid, rng.randint(1, 8), picks))
+                elif r < .66: ops.append(T(rng.choice([1, 30, 60, 121, 200])))
+                elif r < .72: ops.append(dict(op='hold', on=rng.random() < .6))
+                elif r < .79: ops.append(dict(op='move', who=rng.choice(['heroi'] + names), x=rng.randint(4, 14), y=rng.randint(4, 12)))
+                elif r < .84: ops.append(dict(op='hurt', amount=rng.choice([20, 90, 250])))
+                elif r < .89: ops.append(dict(op='resource', value=rng.choice([10, 100])))
+                elif r < .95: ops.append(dict(op='enemy_state', target=rng.choice(names), kind=rng.choice(['stun', 'slow', 'mark', 'curse', 'burn']),
+                                              ticks=rng.choice([120, 400]), mag=rng.choice([.3, 2.])))
+                else: ops.append(dict(op='dodge', value=rng.choice([0, 40, 90])))
+            cases.append(record(f'passivas {cls} {c}', ops, seed * 1000 + len(cases), shield=cls == 'paladino', cls=cls, ranks=ranks))
+    return cases
+
+
 def main():
-    cases = handwritten() + randomized(150, 40, 2028)
+    cases = handwritten() + randomized(150, 40, 2028) + with_passives(24, 45, 2030)
     out = HERE / 'tests' / 'parity' / 'skills_cases.json'
     out.parent.mkdir(parents=True, exist_ok=True)
     payload = {'source': 'umbra-ashes-below game/combat_system/v16 + game/skills/v16/tuning.py', 'classes': CLASSES,

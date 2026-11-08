@@ -39,6 +39,9 @@ public interface ISkillUser : IHero, ITarget
     int ActiveMainSlot { get; }
     void RecalculateStats();
     SkillState Skills { get; }
+    /// <summary>For the class passives (5.5): the class and the tree that holds their ranks (null = no passives).</summary>
+    string PlayerClass { get; }
+    SkillTree? Tree { get; }
 }
 
 /// <summary>Per-hero bookkeeping of the 0.16 engine (player.skill_cooldowns, skill_charges and the v16_* fields).</summary>
@@ -60,6 +63,15 @@ public sealed class SkillState
     public string? LastSkillId, LastSkillAnim;
     public List<(int X, int Y)?> TargetPositions { get; } = new();
     public (int X, int Y)? Direction;
+    // class passives (skills/v16/passives.py): temporary bonuses and their counters
+    /// <summary>v16_pbuffs: name -> (ticks left, value), insertion-ordered.</summary>
+    public List<KeyValuePair<string, (int Ticks, double Value)>> PassiveBuffs { get; } = new();
+    public int Streak, StreakTicks, PactTicks, BastionTicks;
+    public string? LastFamily;
+    public bool HasLastFamily;
+    /// <summary>v16_elements: (element, time in ms) of the recent casts (Convergência Arcana).</summary>
+    public List<(string? Element, long Time)> Elements { get; set; } = new();
+    public string? Affinity;
 }
 
 /// <summary>
@@ -118,4 +130,6 @@ public static class SkillEnv
 {
     public static ISkillHooks Hooks = new NeutralHooks();
     public static IRandom Rng = new PyRandom(0);
+    /// <summary>pygame.time.get_ticks (ms): only Convergência Arcana reads the clock.</summary>
+    public static Func<long> Clock = () => 0;
 }

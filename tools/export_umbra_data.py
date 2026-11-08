@@ -37,6 +37,27 @@ def write(name, data):
     return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
 
+def trees():
+    """The skill tree of each class exactly as the game builds it: a real hero of the composed engine (game.core.engine
+    installs every layer and turns the 0.16 catalogs on), in node order. Each node also carries the level the real
+    requirements.required_level asks for. Runs last: importing the engine composes the classes."""
+    import game.core.engine  # noqa: F401
+    from game.entities.player import Player
+    from game.skills import tree as tree_module, ranks, requirements, loadout
+    from game.skills.catalog import get_basic_skills, get_main_skills
+    out = {'EFFECT_CAPS': tree_module.EFFECT_CAPS, 'MAX_RANK': ranks.MAX_RANK, 'PASSIVE_RANK': ranks.PASSIVE_RANK,
+           'MAX_LEVEL': ranks.MAX_LEVEL, 'SLOTS': loadout.COUNT, 'classes': {}}
+    for cls in ('barbaro', 'mago', 'ladino', 'paladino', 'necromante', 'bruxo', 'druida'):
+        hero = Player((0, 0), cls); tree = hero.skill_tree
+        nodes = [[key, {**node, 'required_level': requirements.required_level(node)}] for key, node in tree.nodes.items()]
+        skills = {row['id']: {'category': row.get('category'), 'basic': True} for row in get_basic_skills(cls)}
+        skills.update({row['id']: {'category': row.get('category'), 'basic': False} for row in get_main_skills(cls)})
+        out['classes'][cls] = {'points': tree.points, 'nodes': nodes, 'skills': skills,
+                               'start': {'basic_skill_id': hero.basic_skill_id, 'equipped_main_skills': hero.equipped_main_skills,
+                                         'unlocked': sorted(tree.unlocked)}}
+    return out
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     hashes = {}
@@ -63,6 +84,7 @@ def main():
         'palette': {'DEFAULT': palette.DEFAULT},
     }
     hashes['rules.json'] = write('rules.json', rules)
+    hashes['trees.json'] = write('trees.json', trees())
 
     commit = subprocess.run(['git', '-C', str(UMBRA), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
     branch = subprocess.run(['git', '-C', str(UMBRA), 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True).stdout.strip()

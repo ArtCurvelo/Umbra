@@ -46,8 +46,8 @@ Regras do documento de direção:
 | 5.3 | Recursos compartilhados (Barreira em camadas, Fortificação, Orbes de Sangue, acúmulos: `resources.py`) | **Feito, com paridade** (2026-11-08) |
 | 5.4 | Motor de habilidades v16 (formas, efeitos, condições, mundo por tick) e opções C/E/T, para as 5 classes sem invocações | **Feito, com paridade** (2026-11-08) |
 | 5.4b | O resto do motor: invocações, cadáveres e Jaula (`allies.py`, formas `summon`/`corpse`/`cage`), junto com o Bruxo e o Necromante | Entra na 5.8 |
-| 5.5 | Árvore e graus reais, passivas de classe (substitui os graus PROVISÓRIOS da slice) | Próximo |
-| 5.6 | Itens da Reforge: raridades, afixos, gemas, engastes, forja, baú, materiais (substitui os itens PROVISÓRIOS da slice) | Pendente |
+| 5.5 | Árvore e graus reais, espaços de habilidade, passivas de classe | **Feito, com paridade** (2026-11-08) |
+| 5.6 | Itens da Reforge: raridades, afixos, gemas, engastes, forja, baú, materiais (substitui os itens PROVISÓRIOS da slice) | Próximo |
 | 5.7 | Inimigos e chefes (IA, habilidades dos chefes) | Pendente |
 | 5.8 | Classes, uma por vez (Bárbaro primeiro; Necromante por último, com lacaios e Grimório) | Pendente |
 | 5.9 | Mundo: as 6 regiões, cidades, teleportes, masmorras por família, dificuldade | Pendente |
@@ -56,19 +56,25 @@ Regras do documento de direção:
 
 ## Pendências registradas pelo que já foi portado
 - **`Status.Apply`:** falta a proteção "Sacrificial" do Bruxo (`warlock.protected`). Entra com a classe (5.8).
-- **`Elements.DefenseFactor`:** as passivas de classe chegam pelo gancho `Elements.IncomingFactor` (5.5).
+- **`Elements.DefenseFactor`:** resolvido na 5.5. `Passives.Use` instala o gancho `Elements.IncomingFactor` (Pele Endurecida, Guardião).
 - **`Elements.Deal`:**
   - falta a recompensa de abate de alvo marcado (`skill_procs.mark_reward`). Ela depende de campos que o herói grava (`_marked_target`, `mark_kill_resource`), e por isso entra com as classes (5.8);
   - som e lista de eventos de acerto são apresentação e são ligados no Godot.
 - **`Resources`:**
   - os afixos de item do Necromante (`necro_affixes.share`: barreira, fortificação) chegam pelo gancho `Resources.AffixShare` (5.6);
   - os bônus de sacrifício do Grimório (`grimoire.bonus`: velocidade de ataque, armadura) chegam por `Resources.GrimoireBonus` (5.8);
-  - ganhar recurso ao beber um orbe é regra do herói (`IHero.GainResource`: bônus da árvore e passivas de classe), ligada com a árvore (5.5);
+  - ganhar recurso ao beber um orbe é regra do herói (`IHero.GainResource`: bônus da árvore e passivas de classe), ligada com o herói (5.8; os fatores já foram portados na 5.5);
   - desenhar os orbes é apresentação (Godot); a posição do herói em tiles (`IHero.X/Y`) é ligada à slice com o mundo (5.9).
 - **Motor de habilidades (`Combat/V16`):** o que pertence a outras etapas chega por `ISkillHooks` (padrão neutro em `NeutralHooks`):
   - passivas de classe (dano, duração, cura, barreira, custo em vida, corrente, eventos de acerto/lançamento/abate/esquiva): 5.5;
   - bônus por etiqueta, Grimório e afixos de item: 5.6;
   - regras do Bruxo e do Necromante (ações, condições, zonas, formas `summon`/`corpse`/`cage`, ações `swap`/`ally_intangible`): 5.8 (5.4b).
+- **Árvore e passivas (`Skills/SkillTree.cs`, `Combat/V16/Passives.cs`):**
+  - a slice ainda usa os graus PROVISÓRIOS (`SkillRanks`) e a tela de árvore da Fase 4 com 3 habilidades. Ela passa para a árvore real quando o Bárbaro for ligado às regras reais (5.8), porque graus sem o motor real não mudariam nada no combate;
+  - o ponto por nível (`level_up` → `add_point`), a recuperação de recurso (`regen_factor`) e o ganho de recurso (`resource_gain_factor`) são chamados pelo herói (5.8). As funções já estão portadas e conferidas;
+  - recalcular atributos depois de uma compra (`refresh_stats`) e cancelar o golpe em preparação são do herói (`ITreeOwner`, 5.8);
+  - as passivas de lacaios (`minion_health`, `minion_damage`, `ally_lost`) entram com as invocações (5.8);
+  - converter a árvore dos saves antigos (`respec.migrate`) é a 5.10.
 - **Fora do domínio (apresentação, no Godot):** `skill_started_at`, som do lançamento, `del motion` do Retorno.
 - **Ligação com a slice:** o combate da slice ainda usa o modelo da Fase 2. Pôr o Bárbaro nas regras reais (cooldowns, recurso, golpe básico com preparação) é a 5.8.
 - **Gatilhos que o jogo chama e o domínio não decide:**
@@ -153,3 +159,37 @@ Regras do documento de direção:
   - `>=` contra `>` na chance: só difere se o sorteio cair exatamente no valor.
 - **Falha que o teste de mutação encontrou na primeira versão dos casos:** nenhum caso exercitava o cone dos projéteis extras. Foi acrescentado o caso do leque da Rajada.
 - **Sem efeito no jogo ainda:** o combate da slice continua com o modelo da Fase 2. Ligar o Bárbaro às regras reais é a 5.8.
+
+## Entrega 5.5 (2026-11-08)
+- **Dados:** `game/data/umbra/trees.json`. A árvore de cada uma das 7 classes foi exportada de um herói real do motor composto do UMBRA (todas as camadas instaladas, catálogos 0.16 ativos), na ordem dos nós, com o nível que `requirements.required_level` exige para cada nó. Também saem os tetos de efeito, os graus máximos e o número de espaços.
+- **Arquivos novos:**
+  - `src/Umbra.Domain/Skills/SkillTree.cs`:
+    - `TreeCatalog` e `SkillTree`: compra, graus 1–15, exclusivos, nível exigido, efeitos com teto, lados das passivas, devolução;
+    - `TreeRules`: `unlock_skill`, `refund`, os cinco espaços com uma Suprema só, e as opções escolhidas lidas da árvore;
+  - `src/Umbra.Domain/Combat/V16/Passives.cs`:
+    - as passivas de classe: valores, fatores, bônus temporários e eventos de acerto, lançamento, abate, esquiva e tick;
+    - `PassiveHooks` liga as passivas ao motor de habilidades;
+  - `tools/parity/tree_parity.py`, `tests/parity/tree_cases.json`, `ParityTreeTests.cs`.
+- **Paridade da árvore: 107 sequências (6 954 operações) num herói real de cada classe**, com o `get_effect` composto pelo `balance.py`. A cada passo são conferidos:
+  - pontos, nós comprados, investimentos e graus (até 15);
+  - lados das passivas e os cinco espaços;
+  - todos os totais de efeito e as opções ativas de cada habilidade;
+  - os 29 valores de passiva e os 16 fatores.
+- **Paridade do motor com passivas reais: mais 120 sequências** (24 por classe, passivas em graus aleatórios), entre elas Convergência, Último Bastião, Alternância, Instinto, Sequência, Pós-esquiva e o critério de crítico. O motor tem agora 318 sequências (14 070 operações). Nelas o relógio do Python (`pygame.time.get_ticks`) segue os ticks, como o `SkillEnv.Clock` do C#.
+- **Testes: xUnit 771/771; autoteste do Godot 35/35.**
+- **Prova de mutação** (10 erros inseridos, 10 detectados):
+
+  | Erro inserido | Sequências que falham |
+  |---|---|
+  | passiva no grau 3 valendo como grau 2 | 83 |
+  | nível exigido estrito (`<=`) | 42 |
+  | passiva valendo sem a habilidade equipada | 30 |
+  | modificadores deixam de ser exclusivos | 27 |
+  | Último Bastião com recarga de 44 s | 16 |
+  | Convergência com janela de 4 s | 10 |
+  | devolução de grau devolvendo até 2 pontos | 8 |
+  | grau máximo 14 | 7 |
+  | duas Supremas equipadas ao mesmo tempo | 2 |
+  | Sede com limiar de 40% | 2 |
+
+- **Sem efeito no jogo ainda:** a slice continua com os graus PROVISÓRIOS e o combate da Fase 2 (ver pendências).

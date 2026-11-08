@@ -83,11 +83,20 @@ public class ParitySkillsTests
 
         public double GetAttackDamage(ITarget? enemy, bool skill) => Attack * (skill ? 1.1 : 1.0);
         public void RecalculateStats() => Recalcs++;
+        public string PlayerClass { get; set; } = "barbaro";
+        public SkillTree? Tree { get; set; }
     }
 
     private static readonly JsonElement Root = JsonDocument.Parse(File.ReadAllText(
         Path.Combine(Path.GetDirectoryName(UmbraData.FindRoot())!, "..", "..", "tests", "parity", "skills_cases.json"), Encoding.UTF8)).RootElement;
     private static readonly UmbraData Catalog = UmbraData.Load(UmbraData.FindRoot());
+    private static long _ticks;
+
+    static ParitySkillsTests()
+    {
+        TreeCatalog.Load(UmbraData.FindRoot()); Passives.Use(Catalog);
+        SkillEnv.Clock = () => _ticks * 1000 / 60;                     // pygame.time.get_ticks in the recording
+    }
 
     private static Map BuildMap()
     {
@@ -138,6 +147,7 @@ public class ParitySkillsTests
             case "tick":
                 for (int i = 0; i < op.GetProperty("n").GetInt32(); i++)
                 {
+                    _ticks++;
                     SkillWorldTick.Tick(new SkillScene(p, enemies, s.Map));
                     Status.TickOnce(p); foreach (var e in s.Enemies) Status.TickOnce(e);
                     foreach (var k in p.Skills.Cooldowns.Keys.ToList()) p.Skills.Cooldowns[k] = Math.Max(0, p.Skills.Cooldowns[k] - 1);
@@ -226,6 +236,9 @@ public class ParitySkillsTests
             ["thorns"] = p.ThornsChoice, ["ward_gain"] = k.WardGain, ["absorbed"] = p.AbsorbedTotal,
             ["last"] = k.LastSkillId, ["anim"] = k.LastSkillAnim, ["targets"] = k.TargetPositions.Select(Pos).ToList(),
             ["direction"] = Pos(k.Direction), ["hold"] = k.Hold, ["recalcs"] = (double)p.Recalcs, ["last_dash"] = (double)k.LastDash,
+            ["pbuffs"] = k.PassiveBuffs.Select(kv => (object?)L(kv.Key, (double)kv.Value.Ticks, kv.Value.Value)).ToList(),
+            ["streak"] = L((double)k.Streak, (double)k.StreakTicks), ["family"] = k.HasLastFamily ? k.LastFamily : null,
+            ["elements"] = k.Elements.Select(e => (object?)L(e.Element, (double)e.Time)).ToList(), ["bastion"] = (double)k.BastionTicks,
         };
         if (k.World is { } w)
             state["world"] = new PyDict
@@ -256,9 +269,18 @@ public class ParitySkillsTests
     public void SameNumbersAsPython(int index, string name)
     {
         var @case = Root.GetProperty("cases")[index];
-        SkillEnv.Hooks = new NeutralHooks();
+        var ranks = @case.GetProperty("ranks");
+        SkillEnv.Hooks = ranks.ValueKind == JsonValueKind.Null ? new NeutralHooks() : new PassiveHooks();
+        _ticks = 0;
         SkillEnv.Rng = new PyRandom(@case.GetProperty("seed").GetInt64());
         var scene = Build(@case.GetProperty("shield").GetBoolean());
+        if (ranks.ValueKind != JsonValueKind.Null)
+        {
+            string cls = @case.GetProperty("class").GetString()!; var tree = new SkillTree(cls);
+            foreach (var r in ranks.EnumerateObject())
+                if (r.Value.GetInt32() != 0) { tree.Unlocked.Add("class:" + r.Name); tree.Ranks["class:" + r.Name] = r.Value.GetInt32(); }
+            scene.Hero.PlayerClass = cls; scene.Hero.Tree = tree;
+        }
         var specs = Root.GetProperty("specs");
         int step = 0;
         foreach (var s in @case.GetProperty("steps").EnumerateArray())

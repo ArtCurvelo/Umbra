@@ -11,7 +11,7 @@ public sealed class CtxState
     public bool HasCenter;
     public (int X, int Y)? Center;
     public (int X, int Y)? Origin;
-    public bool Last, Primed, Crit, CritHit, DodgeUsed;
+    public bool Last, Primed, Crit, CritHit, DodgeUsed, Oath;
     public Dictionary<ITarget, int>? Concentrate;
     public Dictionary<PyDict, int>? Limits;
     public int Healed;
