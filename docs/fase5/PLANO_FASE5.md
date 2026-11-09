@@ -454,7 +454,7 @@ Regras do documento de direção:
   - **Causa:** o travamento por golpes descrito na 5.8c. Ele está nas regras do UMBRA, não no port.
   - **O teste "esquivar reduz o dano" saiu:** sem golpes que acertem, os dois perfis tomam ~0 de dano. Ele volta quando a slice tiver desafio (decisão do Game Director).
 
-## Desafio da slice: cripta como no UMBRA + chefe (2026-11-09) — aguardando aprovação do Game Director
+## Desafio da slice: cripta como no UMBRA + chefe (2026-11-09) — aprovado pelo Game Director e mesclado no main
 - **Decisão do Game Director:** opções A + B, com a família das criptas (sombra, espectro, cultista).
 - **População (`GameSession.Populate`):** a regra de masmorra do UMBRA (`world/sessions.create_floor`), aplicada à cripta da slice.
   - **Grupos:** cada um dos 6 pontos de surgimento vale por uma sala: grupo com chance de ≈79%, de 1/2/3 inimigos (pesos 42/40/18), de um tipo só. O limite é de 10 inimigos, o do andar 1.
