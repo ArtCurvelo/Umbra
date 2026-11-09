@@ -59,7 +59,23 @@ public sealed class GameSession
     /// <summary>PROVISÓRIO (slice): the hero starts at level 6 with the three skills of the slice learned and equipped,
     /// so Ruptura (level 3) and Investida (level 6) are available as before. A new UMBRA hero starts at level 1.</summary>
     public const int StartLevel = 6;
-    public static readonly string[] StartSkills = { "barb2_golpe_brutal", "barb2_ruptura", "barb2_investida" };
+    /// <summary>The slice's kit of a class, read from its 0.16 catalog by one rule (PROVISÓRIO, step 5.8d1): the first
+    /// Básica (attack button), the first Principal that is not channelled (slot 2) and the Mobilidade skill (slot 3).
+    /// For the Bárbaro: Golpe Brutal, Ruptura, Investida.</summary>
+    public static string[] StartKit(string playerClass)
+    {
+        var rows = HeroTables.Data!.Skills[playerClass].Skills;
+        string Pick(Func<Umbra.Domain.Data.SkillData, bool> rule) => rows.First(rule).Id;
+        return new[]
+        {
+            Pick(r => r.Category == "Básica"),
+            Pick(r => r.Category == "Principal" && r.Shape != "channel"),
+            Pick(r => r.Category == "Mobilidade"),
+        };
+    }
+
+    /// <summary>This session's kit (attack button, skill 1, skill 2).</summary>
+    public string[] Kit { get; }
     /// <summary>The crypt family's encounters (world/themes.THEMES, 'Criptas das Cinzas'), chosen by the Game Director.</summary>
     public static readonly string[] CryptPool = { "sombra", "espectro", "cultista" };
 
@@ -92,9 +108,10 @@ public sealed class GameSession
         Hero = new Hero(ToCell(Map.Start), playerClass) { ActiveMap = Grid };
         for (int i = 1; i < StartLevel; i++) Hero.LevelUp();
         Hero.Health = Hero.MaxHealth;
-        foreach (var id in StartSkills.Where(id => Hero.Tree.Nodes.ContainsKey("learn:" + id))) TreeRules.Learn(Hero, "learn:" + id);
-        for (int slot = 0; slot < StartSkills.Length; slot++)
-            if (Hero.Tree.Has("learn:" + StartSkills[slot])) TreeRules.Equip(Hero, StartSkills[slot], slot);
+        Kit = StartKit(playerClass);
+        foreach (var id in Kit.Where(id => Hero.Tree.Nodes.ContainsKey("learn:" + id))) TreeRules.Learn(Hero, "learn:" + id);
+        for (int slot = 0; slot < Kit.Length; slot++)
+            if (Hero.Tree.Has("learn:" + Kit[slot])) TreeRules.Equip(Hero, Kit[slot], slot);
         Populate();
         Locomotion.Sync(Hero, Grid);
     }
@@ -312,7 +329,7 @@ public sealed class GameSession
         var e = EnemyById(id);
         return e is { Alive: true, Windup: > 0 } ? 1f - e.Windup / (float)Math.Max(1, e.WindupDuration) : null;
     }
-    public bool Dashing => LastCast == "barb2_investida" && Tick - LastCastTick < 12;
+    public bool Dashing => LastCast == Kit[2] && Tick - LastCastTick < 12;
 
     /// <summary>The skill in one of the five slots, tuned by its rank and options (0 = the attack button).</summary>
     public PyDict? Slot(int index)

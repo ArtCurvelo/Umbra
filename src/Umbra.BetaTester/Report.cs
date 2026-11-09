@@ -19,7 +19,7 @@ public static class Report
         var md = new StringBuilder();
         int runs = all.Sum(s => s.Count);
         md.AppendLine($"# Relatório do beta tester — {date}").AppendLine();
-        md.AppendLine($"Versão testada: `{version}` (vertical slice: Bárbaro nível {Facts.Hero().Level} na cripta, inimigos da família das criptas no nível do herói, em grupos, com elites e o chefe; regras reais do UMBRA desde a 5.8c). ");
+        md.AppendLine($"Versão testada: `{version}` (vertical slice: {Facts.ClassName} nível {Facts.Hero().Level} na cripta, inimigos da família das criptas no nível do herói, em grupos, com elites e o chefe; regras reais do UMBRA desde a 5.8c). ");
         md.AppendLine($"{runs} partidas jogadas por {all.Count} perfis de jogador, sementes {firstSeed} a {firstSeed + (ulong)all.Max(s => s.Count) - 1}, " +
                       "sem janela, uma de cada vez, com as regras do UMBRA portadas para C#. O bot só aperta os mesmos botões de um jogador (andar, mirar, golpes, inventário, árvore).").AppendLine();
 
@@ -49,7 +49,7 @@ public static class Report
         }
 
         md.AppendLine("## Números por perfil").AppendLine();
-        md.AppendLine("| Perfil | Partidas | Venceu | Morreu | Travou/erro | Tempo (mediana) | Pior vida (média) | Dano tomado | Golpes inimigos que acertaram | Esquivas tardias | Fúria cheia | Poções/partida | Itens/partida |");
+        md.AppendLine("| Perfil | Partidas | Venceu | Morreu | Travou/erro | Tempo (mediana) | Pior vida (média) | Dano tomado | Golpes inimigos que acertaram | Esquivas tardias | Recurso cheio | Poções/partida | Itens/partida |");
         md.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|---|");
         foreach (var s in all)
         {
@@ -92,14 +92,14 @@ public static class Report
         md.AppendLine($"| Golpes de inimigos comuns que acertam o Veterano | até {P(Targets.VeteranoStrikeLandedMax)} |");
         md.AppendLine($"| Esquivas que chegam tarde (o golpe acerta mesmo assim) | até {P(Targets.DodgeLockedMax)} |");
         md.AppendLine($"| Tempo para derrotar um inimigo comum | {N(Targets.KillSecondsMin)}–{N(Targets.KillSecondsMax)} s |");
-        md.AppendLine($"| Parte da Ruptura no dano do Veterano | ao menos {P(Targets.SpenderShareMin)} |");
-        md.AppendLine($"| Tempo com Fúria cheia | até {P(Targets.FuryCappedMax)} |");
+        md.AppendLine($"| Parte de {Facts.Name(Facts.Main)} no dano do Veterano | ao menos {P(Targets.SpenderShareMin)} |");
+        md.AppendLine($"| Tempo com {Facts.ResourceLabel} cheia | até {P(Targets.FuryCappedMax)} |");
         md.AppendLine($"| Golpes no vazio | até {P(Targets.WhiffMax)} |");
         md.AppendLine($"| Ataque vindo do equipamento | até +{P(Targets.GearAttackShareMax)} da base |");
         md.AppendLine();
 
         md.AppendLine("## Limites deste teste").AppendLine();
-        md.AppendLine("- Joga só o que a slice tem: Bárbaro nível 6 (PROVISÓRIO), uma cripta (sombra, espectro, cultista e o Guardião das Cinzas), três habilidades nos espaços. Outras classes entram com a 5.8d.");
+        md.AppendLine($"- Joga só o que a slice tem: {Facts.ClassName} nível 6 (PROVISÓRIO), uma cripta (sombra, espectro, cultista e o Guardião das Cinzas), três habilidades nos espaços ({Facts.Name(Facts.Basic)}, {Facts.Name(Facts.Main)}, {Facts.Name(Facts.Mobility)}). Bruxo e Necromante entram na 5.8d2–d4.");
         md.AppendLine("- Não avalia visual, som, leitura da tela nem diversão; mede números de jogo. Os perfis são aproximações de jogadores reais.");
         md.AppendLine("- Regras, itens e ranks são os do UMBRA. Ficam fora o dano desperdiçado (a partida informa só a vida tirada) e o crítico e o combo na tabela de golpes por rank.");
         return md.ToString();

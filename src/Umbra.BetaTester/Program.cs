@@ -4,9 +4,15 @@ using System.Text.Json;
 using Umbra.BetaTester;
 
 // AI beta tester of UMBRA (vertical slice). Plays headless with several player profiles and writes a report.
-//   dotnet run --project src/Umbra.BetaTester -- [--runs N] [--seed S] [--perfis novato,veterano] [--saida pasta] [--versao txt]
+//   dotnet run --project src/Umbra.BetaTester -- [--classe barbaro|mago|ladino|paladino|druida] [--runs N] [--seed S]
+//                                                [--perfis novato,veterano] [--saida pasta] [--versao txt]
 var args_ = args.ToList();
 string? Opt(string name) { int i = args_.IndexOf(name); return i >= 0 && i + 1 < args_.Count ? args_[i + 1] : null; }
+
+string[] playable = { "barbaro", "mago", "ladino", "paladino", "druida" };      // Bruxo and Necromante: 5.8d2–d4
+Facts.Class = Opt("--classe") ?? "barbaro";
+if (!playable.Contains(Facts.Class)) { Console.Error.WriteLine($"classe não jogável na slice: {Facts.Class} ({string.Join(", ", playable)})"); return 1; }
+Console.WriteLine($"{Facts.ClassName}: {Facts.Name(Facts.Basic)}, {Facts.Name(Facts.Main)}, {Facts.Name(Facts.Mobility)}");
 
 int runs = int.TryParse(Opt("--runs"), out var r) ? Math.Max(1, r) : 40;
 ulong first = ulong.TryParse(Opt("--seed"), out var s) ? s : 1;

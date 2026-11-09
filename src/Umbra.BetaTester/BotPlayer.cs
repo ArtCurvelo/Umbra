@@ -8,7 +8,7 @@ namespace Umbra.BetaTester;
 
 /// <summary>
 /// Plays like a person of a given <see cref="Persona"/> on UMBRA's real rules (step 5.8c): it only reads what the screen
-/// shows (positions, an enemy's wind-up and the cell it is aimed at, cooldowns, Fúria) and only answers with an
+/// shows (positions, an enemy's wind-up and the cell it is aimed at, cooldowns, the resource) and only answers with an
 /// <see cref="InputFrame"/>, the same thing the controls send. Reaction time, aim error and habits come from the persona;
 /// randomness comes from its own seeded generator, so a run replays exactly. Skill buttons are pressed for one tick
 /// (the game fires a skill on the press).
@@ -115,15 +115,21 @@ public sealed class BotPlayer
         float distance = Vector2.Distance(here, at);
         var toward = Rotate(Vector2.Normalize(at - here + new Vector2(1e-4f, 0)), (float)(_rng.NextDouble() * 2 - 1) * _p.AimErrorDegrees);
         var aim = here + toward * distance;
-        if (s.Adjacent(target))
+        bool sight = Geo.LineOfSight(s.Grid, hero.Position, target.Position);
+        if (Steps(target, hero.Position) <= Math.Max(1, (int)s.RangeOf(s.Kit[0])) && sight)
         {
-            var cone = s.Slot(1);
-            int group = s.Enemies.Count(e => e.Alive && InCone(hero.Position, e, toward, s.RangeOf(Facts.Ruptura)));
-            bool spend = _p.ConeGroup > 0 && cone != null && hero.Resource >= cone.Num("cost", 0)
-                         && hero.Skills.Cooldowns.GetValueOrDefault(Facts.Ruptura) == 0 && group >= _p.ConeGroup;
+            var main = s.Slot(1);
+            bool affordable = main != null && hero.Resource >= main.Num("cost", 0) && hero.Skills.Cooldowns.GetValueOrDefault(s.Kit[1]) == 0
+                              && Steps(target, hero.Position) <= Math.Max(1, (int)s.RangeOf(s.Kit[1]));
+            // a cone waits for a group; any other shape is used on the target as soon as the persona spends at all
+            int group = main?.Str("shape") == "cone"
+                ? s.Enemies.Count(e => e.Alive && InCone(hero.Position, e, toward, s.RangeOf(s.Kit[1]))) : int.MaxValue;
+            // UMBRA's projectiles and beams fly along one of 8 directions (geometry.direction): who spends lines up first
+            if (main?.Str("shape") is "projectile" or "line" && !Aligned(hero.Position, target.Position)) group = 0;
+            bool spend = _p.ConeGroup > 0 && affordable && group >= _p.ConeGroup;
             return new InputFrame(Vector2.Zero, null, aim, !spend, spend, false);
         }
-        bool dash = _p.UsesDash && hero.Skills.Cooldowns.GetValueOrDefault(Facts.Investida) == 0 && Steps(target, hero.Position) is >= 2 and <= 4
+        bool dash = _p.UsesDash && hero.Skills.Cooldowns.GetValueOrDefault(s.Kit[2]) == 0 && Steps(target, hero.Position) is >= 2 and <= 4
                     && Geo.LineOfSight(s.Grid, hero.Position, target.Position);
         return new InputFrame(dash ? Vector2.Zero : Walk(s, target.Position), null, aim, false, false, dash);
     }
@@ -139,7 +145,13 @@ public sealed class BotPlayer
         return to.LengthSquared() > 1e-4f ? Vector2.Normalize(to) : Vector2.Zero;
     }
 
-    /// <summary>The bot's eye for Ruptura's cone: within reach (tiles) and 45° of the aim.</summary>
+    private static bool Aligned((int X, int Y) a, (int X, int Y) b)
+    {
+        int dx = Math.Abs(b.X - a.X), dy = Math.Abs(b.Y - a.Y);
+        return dx == 0 || dy == 0 || dx == dy;
+    }
+
+    /// <summary>The bot's eye for a cone skill: within reach (tiles) and 45° of the aim.</summary>
     private static bool InCone((int X, int Y) from, EnemyActor e, Vector2 dir, double range)
     {
         var to = new Vector2(e.X - from.X, e.Y - from.Y);

@@ -21,10 +21,9 @@ public static class Session
     /// travels a few tiles).</summary>
     public const int HitWindow = 14;
 
-    /// <summary>Points plan of a player who spends them (the slice starts with 3): the attack, the spender, the attack again,
-    /// then the dash. The tree screen does the same through TreeRules.Learn.</summary>
-    public static readonly string[] PointsPlan =
-        { "learn:" + Facts.Golpe, "learn:" + Facts.Ruptura, "learn:" + Facts.Golpe, "learn:" + Facts.Investida };
+    /// <summary>Points plan of a player who spends them (the slice starts with 3): the attack, skill 1, the attack again,
+    /// then the mobility skill. The tree screen does the same through TreeRules.Learn.</summary>
+    public static string[] PointsPlan => new[] { "learn:" + Facts.Basic, "learn:" + Facts.Main, "learn:" + Facts.Basic, "learn:" + Facts.Mobility };
 
     private static readonly object RunGate = new();
 
@@ -45,7 +44,7 @@ public static class Session
 
     private static void Run(Persona persona, ulong seed, RunRecord rec)
     {
-        var s = new GameSession(seed);
+        var s = new GameSession(seed, Facts.Class);
         var hero = s.Hero;
         var bot = new BotPlayer(persona, StableSeed(persona, seed));
         rec.Enemies = s.Enemies.Count; rec.EnemyLife = s.Enemies.Sum(e => e.MaxHealth); rec.LowestHealth = hero.Health;
@@ -77,7 +76,7 @@ public static class Session
                 open = ev.SkillId; openTick = s.Tick; openHit = false; rec.Skill(ev.SkillId).Casts++;
             }
             if (open != null && s.Tick - openTick > HitWindow) Close();
-            string current = open ?? s.LastCast ?? Facts.Golpe;
+            string current = open ?? s.LastCast ?? Facts.Basic;
             foreach (var ev in s.Events)
             {
                 switch (ev)

@@ -52,7 +52,7 @@ Regras do documento de direção:
 | 5.8a | Núcleo do herói (todas as classes): atributos com equipamento, nível e experiência, recurso, dano recebido, poções, movimento, investida, passo por tick, coletas | **Feito, com paridade** (2026-11-09) |
 | 5.8b | Ataque básico com preparação (resolver) e habilidades usadas pelos espaços | **Feito, com paridade** (2026-11-09) |
 | 5.8c | A slice com o Bárbaro real (graus, itens e inimigos reais no lugar dos PROVISÓRIOS) | **Feito** (2026-11-09), telas aprovadas |
-| 5.8d | Classes uma a uma nas suas regras próprias (Bruxo e Necromante por último, com 5.4b: invocações, cadáveres, Jaula, Grimório) | Próximo |
+| 5.8d | Classes uma a uma nas suas regras próprias: d1 as 4 classes sem invocações em jogo; d2 Bruxo; d3 Necromante (invocações, cadáveres, estruturas e Jaula, 5.4b); d4 Necromante (`necro3`, Grimório, especializações) | d1 **feito** (2026-11-09); d2 próximo |
 | 5.9 | Mundo: as 6 regiões, cidades, teleportes, masmorras por família, dificuldade | Pendente |
 | 5.10 | Saves: conversor dos `slot_N.json` (versões 1, 2 e 3 e seções) para o formato novo, sem tocar nos originais | Pendente |
 | 5.11 | Co-op local | Pendente |
@@ -494,3 +494,46 @@ Regras do documento de direção:
   - **Esquiva vs. golpe:** quem nunca esquiva (Agressivo) toma menos dano que o Veterano, porque no UMBRA o acerto cancela a preparação do inimigo comum.
   - **Nível 6 (PROVISÓRIO):** o herói continua começando no nível 6.
 - **Telas para aprovação:** `docs/fase5/telas_58c_desafio/` (combate com o chefe e as casas vermelhas, aba Controles com a Poção).
+
+## Entrega 5.8d1 (2026-11-09): as classes sem invocações em jogo
+- **Divisão da 5.8d:**
+  - **d1:** Mago, Ladino, Paladino e Druida em jogo. As regras deles já têm paridade desde a 5.8b; o resto de `skill_procs` é o caminho anterior à 0.16, que os catálogos 0.16 não alcançam.
+  - **d2:** Bruxo (`warlock.py`, especializações, formas).
+  - **d3:** Necromante, parte 1: invocações, IA e formação, cadáveres, estruturas e Jaula (5.4b).
+  - **d4:** Necromante, parte 2: `necro3`, Grimório, especializações, estados e persistência.
+- **Kit da slice por classe (`GameSession.StartKit`, PROVISÓRIO):** uma regra sobre o catálogo 0.16. Entram a primeira Básica, a primeira Principal que não é canalizada e a habilidade de Mobilidade; o herói começa no nível 6.
+
+  | Classe | Botão de ataque | Habilidade 1 | Habilidade 2 |
+  |---|---|---|---|
+  | Bárbaro | Golpe Brutal | Ruptura | Investida (igual à 5.8c) |
+  | Mago | Projétil Arcano | Bola de Fogo | Teleporte |
+  | Ladino | Punhalada | Rajada | Passo Sombrio |
+  | Paladino | Golpe Sagrado | Julgamento | Investida do Templo |
+  | Druida | Espinho Vivo | Tempestade Verde | Salto Lupino |
+
+- **Autopiloto e testador:** atacam do alcance da Básica, com linha de visão, e usam o kit de cada classe.
+  - **Testador:** ganhou `--classe`. Nomes, recurso e números do relatório seguem a classe.
+  - **Regra do UMBRA:** projéteis e feixes andam em 8 direções (`geometry.direction`). Quem gasta recurso só lança a habilidade 1 alinhado com o alvo; sem isso, a Bola de Fogo do Veterano errava 63%.
+  - **Execução sequencial:** as partidas rodam uma de cada vez, como antes.
+- **O Godot continua só com o Bárbaro:**
+  - **Árvore:** a tela tem os nós dele.
+  - **Modelo:** só existe o dele.
+  - **Escolha de classe:** escolher a classe no jogo pede maquete e aprovação.
+- **Testes:**
+  - xUnit 1 289/1 289. Os novos conferem o kit e uma partida de cada classe, e o testador jogando cada classe de forma determinística.
+  - Autoteste do Godot 36/36; `check.ps1` aprovado.
+  - O Bárbaro repete exatamente os números do relatório aprovado.
+- **Relatórios (40 partidas por perfil):** `docs/betatest/classes/<classe>/`.
+
+  | Classe (vida, ataque, armadura) | Novato venceu | Veterano venceu / pior vida |
+  |---|---|---|
+  | Bárbaro (190, 22, 8) | 63% | 100% / 34% |
+  | Druida (135, 21, 6) | 65% | 100% / 39% |
+  | Mago (85, 28, 2) | 35% | 98% / 32% |
+  | Paladino (175, 15, 10) | 18% | 80% / 20% |
+  | Ladino (115, 15, 4) | 3% | 35% / 7% |
+
+- **Para o Game Director (balanceamento do UMBRA, não do port):**
+  - **Ladino:** fraco na cripta no nível 6. Com pouca vida e ataque, a Punhalada tira ~12 por uso.
+  - **Paladino:** sofre com o Novato.
+  - **Projéteis:** erram alvos fora das 8 direções.

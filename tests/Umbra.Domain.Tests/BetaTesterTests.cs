@@ -42,10 +42,10 @@ public class BetaTesterTests
     public void NovatoNeverCastsRupturaNorSpendsPoints()
     {
         var rec = Session.Play(Persona.Novato, 3);
-        Assert.Equal(0, rec.Skill(Facts.Ruptura).Casts);
-        Assert.Equal(0, rec.Skill(Facts.Investida).Casts);
+        Assert.Equal(0, rec.Skill(Facts.Main).Casts);
+        Assert.Equal(0, rec.Skill(Facts.Mobility).Casts);
         Assert.Equal(0, rec.PointsSpent);
-        Assert.True(rec.Skill(Facts.Golpe).Casts > 0);
+        Assert.True(rec.Skill(Facts.Basic).Casts > 0);
     }
 
     /// <summary>The rank table is the game's damage: the first swing of a fresh hero on a full-life enemy (combo ×1,00, the
@@ -53,7 +53,7 @@ public class BetaTesterTests
     [Fact]
     public void HitsToKillMatchTheGame()
     {
-        var table = Facts.HitsToKill(Facts.Golpe).ToList();
+        var table = Facts.HitsToKill(Facts.Basic).ToList();
         Assert.Equal(Umbra.Domain.Skills.TreeCatalog.MaxRank, table.Count);
         Assert.True(table.Zip(table.Skip(1)).All(p => p.Second.Damage >= p.First.Damage));
         var s = new GameSession(4);
@@ -63,7 +63,7 @@ public class BetaTesterTests
             if (s.Events.OfType<DamageEvent>().FirstOrDefault(e => !e.OnHero) is { } hit)
             {
                 var enemy = s.EnemyById(hit.TargetId)!;
-                Assert.Equal(Math.Min(enemy.MaxHealth, Facts.Damage(Facts.Golpe, 1, enemy.Defense)), hit.Amount);
+                Assert.Equal(Math.Min(enemy.MaxHealth, Facts.Damage(Facts.Basic, 1, enemy.Defense)), hit.Amount);
                 return;
             }
         }
@@ -113,5 +113,28 @@ public class BetaTesterTests
             Assert.Contains(section, md);
         Assert.All(findings.Where(f => f.Severity != Severity.Ok), f => Assert.False(string.IsNullOrWhiteSpace(f.Suggestion)));
         Assert.DoesNotContain("SliceData", md);
+    }
+
+    /// <summary>--classe: the tester plays any class without summons with its own kit and names, deterministically, and
+    /// the Bárbaro stays the default.</summary>
+    [Fact]
+    public void PlaysEveryClassWithoutSummons()
+    {
+        try
+        {
+            foreach (var cls in new[] { "mago", "ladino", "paladino", "druida" })
+            {
+                Facts.Class = cls;
+                var a = Session.Play(Persona.Veterano, 3); var b = Session.Play(Persona.Veterano, 3);
+                Assert.Null(a.Error);
+                Assert.NotEqual(Outcome.Stuck, a.Outcome);
+                Assert.Equal(a.Digest, b.Digest);
+                Assert.True(a.Skill(Facts.Basic).Casts > 0, $"{cls}: {Facts.Basic} nunca usado");
+                Assert.True(a.Skill(Facts.Main).Casts > 0, $"{cls}: {Facts.Main} nunca usado");
+                Assert.StartsWith(cls switch { "mago" => "mage2_", "ladino" => "rogue2_", "paladino" => "pala2_", _ => "druid2_" }, Facts.Basic);
+            }
+        }
+        finally { Facts.Class = "barbaro"; }
+        Assert.Equal("barb2_golpe_brutal", Facts.Basic);
     }
 }

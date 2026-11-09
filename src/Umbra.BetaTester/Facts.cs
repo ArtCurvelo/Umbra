@@ -13,7 +13,15 @@ namespace Umbra.BetaTester;
 /// </summary>
 public static class Facts
 {
-    public const string Golpe = "barb2_golpe_brutal", Ruptura = "barb2_ruptura", Investida = "barb2_investida";
+    /// <summary>The class the tester plays (--classe); every number and name below follows it.</summary>
+    public static string Class { get; set; } = "barbaro";
+    /// <summary>The class's slice kit (GameSession.StartKit): attack button, skill 1, mobility skill.</summary>
+    public static string Basic => Kit()[0];
+    public static string Main => Kit()[1];
+    public static string Mobility => Kit()[2];
+    private static string[] Kit() { Load(); return GameSession.StartKit(Class); }
+    public static string ClassName { get { Load(); return HeroTables.Data!.Classes[Class].Label; } }
+    public static string ResourceLabel { get { var h = Fresh().Hero; return h.ResourceLabel; } }
     public const int TicksPerSecond = 60;
 
     private static readonly object Gate = new();
@@ -33,7 +41,7 @@ public static class Facts
         }
     }
 
-    private static GameSession Fresh() { Load(); return new GameSession(1); }
+    private static GameSession Fresh() { Load(); return new GameSession(1, Class); }
 
     public static (int MaxHealth, int Attack, int Defense, int MaxResource, int Level, int Points) Hero()
     {

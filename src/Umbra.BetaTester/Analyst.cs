@@ -20,8 +20,8 @@ public static class Targets
     public const double VeteranoStrikeLandedMax = .30;                 // telegraphs must be dodgeable on reaction
     public const double DodgeLockedMax = .25;                           // dodges that come too late (the strike lands anyway)
     public const double KillSecondsMin = 1.0, KillSecondsMax = 5.0;    // first hit -> death of a common enemy
-    public const double SpenderShareMin = .15;                          // Ruptura's share of an expert's damage
-    public const double FuryCappedMax = .15;                            // share of the run sitting at full Fúria
+    public const double SpenderShareMin = .15;                          // skill 1's share of an expert's damage
+    public const double FuryCappedMax = .15;                            // share of the run sitting at full resource
     public const double WhiffMax = .30;                                 // casts that hit nothing
     public const double GearAttackShareMax = .60;                       // gear attack vs the base attack
     public const double IdleMax = .15;
@@ -75,7 +75,7 @@ public static class Analyst
         if (death > Targets.NovatoDeathMax)
             f.Add(new(Severity.Alta, "Dificuldade", "Difícil demais para quem está começando",
                       $"O Novato morreu em {P(death)} das partidas (meta: até {P(Targets.NovatoDeathMax)}).",
-                      "Menos inimigos por grupo, preparação mais longa dos golpes ou mais vida inicial ao Bárbaro (decisão do Game Director)."));
+                      $"Menos inimigos por grupo, preparação mais longa dos golpes ou mais vida inicial ao {Facts.ClassName} (decisão do Game Director)."));
         else if (death < Targets.NovatoDeathMin)
             f.Add(new(Severity.Media, "Dificuldade", "Sem risco nem para o Novato",
                       $"O Novato morreu em {P(death)} das partidas, só com o ataque básico e sem esquivar (meta: ao menos {P(Targets.NovatoDeathMin)}). " +
@@ -84,10 +84,10 @@ public static class Analyst
                       "Decisão do Game Director: mais inimigos por sala, nível inicial menor, dificuldade maior, ou rever o cancelamento da preparação por acerto."));
         else
             f.Add(new(Severity.Ok, "Dificuldade", "Risco adequado para o Novato", $"Morreu em {P(death)} das partidas.", "Nada a mudar."));
-        double whiff = s.WhiffShare(Facts.Golpe);
+        double whiff = s.WhiffShare(Facts.Basic);
         if (whiff > Targets.WhiffMax)
             f.Add(new(Severity.Media, "Controles", "Golpes no vazio demais para quem mira mal",
-                      $"{P(whiff)} dos Golpes Brutais do Novato não acertaram nada (mira com até {N(s.Persona.AimErrorDegrees, "0")}° de erro).",
+                      $"{P(whiff)} dos usos de {Facts.Name(Facts.Basic)} do Novato não acertaram nada (mira com até {N(s.Persona.AimErrorDegrees, "0")}° de erro).",
                       "Ver por que o golpe não achou alvo (a Básica do UMBRA escolhe o inimigo mais próximo ou o da mira, a 1 casa)."));
     }
 
@@ -150,13 +150,13 @@ public static class Analyst
     {
         var hero = Facts.Hero();
         string attacks = string.Join(", ", Facts.Foes().Select(f => $"{f.Name} {f.Attack}"));
-        return s.DamagePerStrike <= 0 ? $"Nenhum golpe de inimigo comum acertou (ataques: {attacks}; armadura do Bárbaro {hero.Defense})."
-            : $"O dano tomado por golpe de inimigo comum que acertou foi, em média, {N(s.DamagePerStrike, "0")} de {hero.MaxHealth} de vida (inclui o chefe; ataques: {attacks}; armadura do Bárbaro {hero.Defense}).";
+        return s.DamagePerStrike <= 0 ? $"Nenhum golpe de inimigo comum acertou (ataques: {attacks}; armadura do herói {hero.Defense})."
+            : $"O dano tomado por golpe de inimigo comum que acertou foi, em média, {N(s.DamagePerStrike, "0")} de {hero.MaxHealth} de vida (inclui o chefe; ataques: {attacks}; armadura do herói {hero.Defense}).";
     }
 
     private static void Breakpoints(List<Finding> f)
     {
-        foreach (var id in new[] { Facts.Golpe, Facts.Ruptura })
+        foreach (var id in new[] { Facts.Basic, Facts.Main })
         {
             var rows = Facts.HitsToKill(id).ToList();
             var dead = rows.Skip(1).Where(r => r.Hits == rows[rows.IndexOf(r) - 1].Hits).Select(r => r.Rank).ToList();
@@ -180,28 +180,28 @@ public static class Analyst
         else
             f.Add(new(Severity.Ok, "Balanceamento", "Tempo para derrotar um inimigo comum adequado", $"Mediana de {N(kill)} s.", "Nada a mudar."));
 
-        double spender = vet.DamageShare(Facts.Ruptura);
+        double spender = vet.DamageShare(Facts.Main);
         if (spender < Targets.SpenderShareMin)
-            f.Add(new(Severity.Media, "Habilidades", "Ruptura quase não entra na rotação",
-                      $"Ruptura fez só {P(spender)} do dano do {vet.Persona.Name} (meta: ao menos {P(Targets.SpenderShareMin)}).",
-                      $"Custo menor (hoje {Facts.Cost(Facts.Ruptura)} de Fúria) ou mais Fúria por Golpe Brutal (hoje {Facts.Gain(Facts.Golpe)})."));
-        // Only players who spend Fúria say something about the resource (the Novato never casts Ruptura by habit).
+            f.Add(new(Severity.Media, "Habilidades", $"{Facts.Name(Facts.Main)} quase não entra na rotação",
+                      $"{Facts.Name(Facts.Main)} fez só {P(spender)} do dano do {vet.Persona.Name} (meta: ao menos {P(Targets.SpenderShareMin)}).",
+                      $"Custo menor (hoje {Facts.Cost(Facts.Main)} de {Facts.ResourceLabel}) ou mais {Facts.ResourceLabel} por {Facts.Name(Facts.Basic)} (hoje {Facts.Gain(Facts.Basic)})."));
+        // Only players who spend the resource say something about it (the Novato never casts skill 1 by habit).
         var spenders = all.Where(s => s.Persona.ConeGroup > 0).ToList();
         if (spenders.Count > 0 && spenders.MaxBy(s => s.FuryCappedShare) is { } cappedBy && cappedBy.FuryCappedShare > Targets.FuryCappedMax)
-            f.Add(new(Severity.Media, "Habilidades", "Fúria fica cheia e é desperdiçada",
-                      $"O {cappedBy.Persona.Name} (usa Ruptura com {cappedBy.Persona.ConeGroup}+ inimigos no cone) passou {P(cappedBy.FuryCappedShare)} da partida com a Fúria no máximo.",
-                      "Ruptura útil contra um alvo só, ou outra forma de gastar Fúria."));
+            f.Add(new(Severity.Media, "Habilidades", $"{Facts.ResourceLabel} fica cheia e é desperdiçada",
+                      $"O {cappedBy.Persona.Name} (usa {Facts.Name(Facts.Main)} quando pode) passou {P(cappedBy.FuryCappedShare)} da partida com {Facts.ResourceLabel} no máximo.",
+                      $"Outra forma de gastar {Facts.ResourceLabel}, ou habilidade 1 útil contra um alvo só."));
         Breakpoints(f);
-        var dash = vet.Skill(Facts.Investida);
-        if (dash.Casts > 0 && vet.WhiffShare(Facts.Investida) > .5)
-            f.Add(new(Severity.Baixa, "Habilidades", "Investida erra o alvo com frequência",
-                      $"{P(vet.WhiffShare(Facts.Investida))} das Investidas do {vet.Persona.Name} não acertaram ninguém.",
-                      "Mirar a Investida no inimigo mais próximo da direção ou aumentar a largura do acerto."));
+        var dash = vet.Skill(Facts.Mobility);
+        if (dash.Casts > 0 && vet.WhiffShare(Facts.Mobility) > .5)
+            f.Add(new(Severity.Baixa, "Habilidades", $"{Facts.Name(Facts.Mobility)} erra o alvo com frequência",
+                      $"{P(vet.WhiffShare(Facts.Mobility))} dos usos de {Facts.Name(Facts.Mobility)} do {vet.Persona.Name} não acertaram ninguém.",
+                      "Normal para habilidades de movimento sem dano; se tiver dano, mirar no inimigo mais próximo da direção."));
         int baseAttack = Facts.Hero().Attack;
         double attackShare = vet.MeanAttackFromGear / baseAttack;
         if (attackShare > Targets.GearAttackShareMax)
             f.Add(new(Severity.Media, "Itens", "Equipamento pesa demais no ataque",
-                      $"O equipamento somou {N(vet.MeanAttackFromGear)} de ataque ao Bárbaro (base {baseAttack}, +{P(attackShare)}) numa cripta só.",
+                      $"O equipamento somou {N(vet.MeanAttackFromGear)} de ataque ao {Facts.ClassName} (base {baseAttack}, +{P(attackShare)}) numa cripta só.",
                       "Balanceamento das tabelas de itens do UMBRA (afixos de ataque, chance de raridade): decisão do Game Director."));
         var bag = all.Sum(s => s.BagFullRuns);
         if (bag > 0)

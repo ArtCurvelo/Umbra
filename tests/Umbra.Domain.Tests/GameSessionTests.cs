@@ -30,6 +30,7 @@ public class GameSessionTests
     {
         var s = new GameSession(7);
         Assert.Equal(GameSession.StartLevel, s.Hero.Level);
+        Assert.Equal(new[] { "barb2_golpe_brutal", "barb2_ruptura", "barb2_investida" }, s.Kit);     // the slice's Bárbaro, unchanged
         Assert.Equal("barb2_golpe_brutal", s.Hero.BasicSkillId);
         Assert.Equal(new string?[] { "barb2_ruptura", "barb2_investida", null, null }, s.Hero.EquippedMainSkills);
         Assert.Equal(s.Hero.MaxHealth, s.Hero.Health);
@@ -143,7 +144,7 @@ public class GameSessionTests
         Assert.True(s.Hero.Xp > 0 || s.Hero.Level > GameSession.StartLevel, "sem experiência");
         Assert.Contains(events, e => e is DamageEvent { OnHero: false });
         Assert.Contains(events, e => e is CastEvent { Anim: "basic" });
-        Assert.Contains(events, e => e is CastEvent c && c.SkillId == "barb2_ruptura");
+        Assert.Contains(events, e => e is CastEvent c && c.SkillId == s.Kit[1]);
         Assert.Contains(events, e => e is DeathEvent);
         Assert.Contains(events, e => e is ItemDroppedEvent);
     }
@@ -195,5 +196,28 @@ public class GameSessionTests
         Assert.Empty(s.Hero.Inventory.Items);
         Assert.Equal(s.Hero.Position, item.Cell);
         Assert.Contains(item, s.Items);
+    }
+
+    /// <summary>Step 5.8d1: every class without summons plays the slice. The kit follows one rule over the class's 0.16
+    /// catalog, is learned and equipped, and the autopilot uses all three slots against the crypt.</summary>
+    [Theory]
+    [InlineData("barbaro", "barb2_golpe_brutal", "barb2_ruptura", "barb2_investida")]
+    [InlineData("mago", "mage2_projetil_arcano", "mage2_bola_fogo", "mage2_teleporte")]
+    [InlineData("ladino", "rogue2_punhalada", "rogue2_rajada", "rogue2_passo_sombrio")]
+    [InlineData("paladino", "pala2_golpe_sagrado", "pala2_julgamento", "pala2_investida")]
+    [InlineData("druida", "druid2_espinho", "druid2_tempestade", "druid2_salto")]
+    public void EveryClassWithoutSummonsPlaysTheSlice(string cls, string basic, string main, string mobility)
+    {
+        var s = new GameSession(2, cls);
+        Assert.Equal(new[] { basic, main, mobility }, s.Kit);
+        Assert.Equal(cls, s.Hero.PlayerClass);
+        Assert.Equal(basic, s.Hero.BasicSkillId);
+        Assert.Equal(new string?[] { main, mobility, null, null }, s.Hero.EquippedMainSkills);
+        var events = new List<PlayEvent>();
+        for (int i = 0; i < 6000 && s.Hero.Alive && !(s.Cleared && s.Items.Count == 0); i++) { s.Step(Bot(s)); events.AddRange(s.Events); }
+        Assert.True(s.Kills > 0, "nenhum inimigo morreu");
+        Assert.Contains(events, e => e is CastEvent c && c.SkillId == basic);
+        Assert.Contains(events, e => e is CastEvent c && c.SkillId == main);
+        Assert.Contains(events, e => e is DamageEvent { OnHero: false });
     }
 }

@@ -53,7 +53,7 @@ public sealed class Summary
         return w == 0 ? 0 : Runs.Sum(part) / w;
     }
 
-    private static int SkillOrder(string id) => id == Facts.Golpe ? 0 : id == Facts.Ruptura ? 1 : id == Facts.Investida ? 2 : 3;
+    private static int SkillOrder(string id) => id == Facts.Basic ? 0 : id == Facts.Main ? 1 : id == Facts.Mobility ? 2 : 3;
 
     public static double Mean(IEnumerable<double> values) { var v = values.ToList(); return v.Count == 0 ? 0 : v.Average(); }
     public static double Median(IEnumerable<double> values)
