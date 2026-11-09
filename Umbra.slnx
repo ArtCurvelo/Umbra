@@ -5,6 +5,7 @@
     </Project>
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/Umbra.BetaTester/Umbra.BetaTester.csproj" />
     <Project Path="src/Umbra.Domain/Umbra.Domain.csproj" />
   </Folder>
   <Folder Name="/tests/">

@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Umbra.Domain\Umbra.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Umbra.BetaTester\Umbra.BetaTester.csproj" />
   </ItemGroup>
 
   <ItemGroup>

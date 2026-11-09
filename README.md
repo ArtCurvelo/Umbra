@@ -48,6 +48,17 @@ Capturas de efeitos: `--fx golpe|ruptura|investida` (segura o efeito a 35% da vi
 Diagnóstico: `--nohud`, `--scale X`, `--lights N`, `--skip partes` (torches, walls, floor, props, enemies, env, hero, herolight, fx, moon,
 scaling, msaa, torchshadows, glow, moonshadow, post, measure).
 
+## Beta tester (IA)
+`src/Umbra.BetaTester/` joga a slice sem janela com cinco perfis de jogador (Novato, Casual, Veterano, Agressivo, Caótico) e
+escreve um relatório do que mudar e balancear em `docs/betatest/relatorio_<data>.md` (dados brutos em `dados_<data>.json`).
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\betatest.ps1                 # 40 partidas por perfil (~3 s)
+powershell -ExecutionPolicy Bypass -File tools\betatest.ps1 -Runs 200 -Perfis veterano,novato
+```
+O bot só usa a mesma entrada de um jogador (`InputFrame`, inventário e árvore); não muda regra nenhuma. Os perfis
+(`Personas.cs`) e as metas de experiência (`Analyst.cs`, `Targets`) são PROVISÓRIOS até o Game Director decidir.
+Mesma semente e mesmo perfil = mesma partida, então qualquer achado pode ser reproduzido. Código de saída 2 = achou bug.
+
 ## Migração do UMBRA (Fase 5)
 Plano, método e estado: [docs/fase5/PLANO_FASE5.md](docs/fase5/PLANO_FASE5.md). Com o repositório do UMBRA ao lado deste:
 ```powershell
