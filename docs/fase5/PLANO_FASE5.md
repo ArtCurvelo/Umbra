@@ -51,8 +51,8 @@ Regras do documento de direção:
 | 5.7 | Inimigos e chefes: criação por andar, IA (percepção, perseguição, memória, recuo, ataque com preparação), estados, elites, dormência, os 8 chefes (fases, 12 habilidades, armadura óssea, zonas) | **Feito, com paridade** (2026-11-08) |
 | 5.8a | Núcleo do herói (todas as classes): atributos com equipamento, nível e experiência, recurso, dano recebido, poções, movimento, investida, passo por tick, coletas | **Feito, com paridade** (2026-11-09) |
 | 5.8b | Ataque básico com preparação (resolver) e habilidades usadas pelos espaços | **Feito, com paridade** (2026-11-09) |
-| 5.8c | A slice com o Bárbaro real (graus, itens e inimigos reais no lugar dos PROVISÓRIOS) | **Feito** (2026-11-09), telas aguardando aprovação |
-| 5.8d | Classes uma a uma nas suas regras próprias (Bruxo e Necromante por último, com 5.4b: invocações, cadáveres, Jaula, Grimório) | Pendente |
+| 5.8c | A slice com o Bárbaro real (graus, itens e inimigos reais no lugar dos PROVISÓRIOS) | **Feito** (2026-11-09), telas aprovadas |
+| 5.8d | Classes uma a uma nas suas regras próprias (Bruxo e Necromante por último, com 5.4b: invocações, cadáveres, Jaula, Grimório) | Próximo |
 | 5.9 | Mundo: as 6 regiões, cidades, teleportes, masmorras por família, dificuldade | Pendente |
 | 5.10 | Saves: conversor dos `slot_N.json` (versões 1, 2 e 3 e seções) para o formato novo, sem tocar nos originais | Pendente |
 | 5.11 | Co-op local | Pendente |
@@ -398,7 +398,7 @@ Regras do documento de direção:
 
 - **Mutação sem efeito possível (registrada):** o atordoamento de 4 quadros do caminho antigo. O próprio dano do inimigo já aplica 4 quadros em inimigos comuns; só faria diferença em chefes.
 
-## Entrega 5.8c (2026-11-09) — aguardando aprovação do Game Director
+## Entrega 5.8c (2026-11-09) — telas aprovadas pelo Game Director e mescladas no main
 - **A slice joga com o Bárbaro real.** Saíram da partida os graus, os itens e o inimigo PROVISÓRIOS da Fase 2. A `Simulation` antiga continua no repositório só para o BetaTester, até ele mudar para a sessão nova.
 - **`src/Umbra.Domain/Play/GameSession.cs`:** a partida no laço do motor do UMBRA.
   - **Início:** herói real (`Hero`), Brutos Abissais reais (`EnemyActor`, IA da 5.7) e o mapa da cripta.
