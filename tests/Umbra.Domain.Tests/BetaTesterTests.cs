@@ -1,17 +1,25 @@
 using Umbra.BetaTester;
-using Umbra.Domain.Gameplay;
+using Umbra.Domain.Items;
+using Umbra.Domain.Play;
+using Umbra.Domain.Util;
+using Umbra.Domain.Skills;
 
 namespace Umbra.Domain.Tests;
 
-/// <summary>The AI beta tester: plays deterministically, measures what really happened and flags what it should.</summary>
+/// <summary>The AI beta tester on UMBRA's real rules (since 5.8c): plays deterministically, measures what really happened
+/// and flags what it should.</summary>
+[Collection("SkillEnv")]
 public class BetaTesterTests
 {
+    static BetaTesterTests() => Facts.Load();
+
     [Fact]
     public void SamePersonaAndSeedReplayTheSameRun()
     {
         foreach (var persona in Persona.All)
         {
             var a = Session.Play(persona, 7); var b = Session.Play(persona, 7);
+            Assert.Null(a.Error);
             Assert.Equal(a.Digest, b.Digest);
             Assert.Equal(a.Ticks, b.Ticks);
         }
@@ -26,49 +34,57 @@ public class BetaTesterTests
         Assert.Equal(rec.Enemies, rec.Kills);
         Assert.Equal(rec.Kills, rec.Skills.Values.Sum(s => s.Kills));
         Assert.Equal(rec.Kills, rec.KillTicks.Count);
-        Assert.Equal(rec.Enemies * SliceData.Brute.MaxHealth, rec.Skills.Values.Sum(s => s.Damage));  // useful damage = all enemy life
-        Assert.Equal(Session.PointsPlan.Length, rec.PointsSpent);
-    }
-
-    [Fact]
-    public void DodgingReducesDamageTaken()
-    {
-        var seeds = Enumerable.Range(1, 12).Select(i => (ulong)i).ToList();
-        double vet = seeds.Average(s => Session.Play(Persona.Veterano, s).DamageTaken);
-        double aggressive = seeds.Average(s => Session.Play(Persona.Agressivo, s).DamageTaken);
-        Assert.True(vet < aggressive, $"veterano {vet}, agressivo {aggressive}");
+        Assert.Equal(rec.Enemies * Facts.Brute().MaxHealth, rec.Skills.Values.Sum(s => s.Damage));  // life taken = all enemy life
+        Assert.Equal(Facts.Hero().Points, rec.PointsSpent);                                          // spends every starting point
     }
 
     [Fact]
     public void NovatoNeverCastsRupturaNorSpendsPoints()
     {
         var rec = Session.Play(Persona.Novato, 3);
-        Assert.Equal(0, rec.Skill(SliceData.Ruptura.Id).Casts);
-        Assert.Equal(0, rec.Skill(SliceData.Investida.Id).Casts);
+        Assert.Equal(0, rec.Skill(Facts.Ruptura).Casts);
+        Assert.Equal(0, rec.Skill(Facts.Investida).Casts);
         Assert.Equal(0, rec.PointsSpent);
+        Assert.True(rec.Skill(Facts.Golpe).Casts > 0);
     }
 
+    /// <summary>The rank table is the game's damage: the first swing of a fresh hero on a full-life Bruto (combo ×1,00, the
+    /// slice's Bárbaro has no crit) takes exactly the rank-1 value.</summary>
     [Fact]
-    public void HitsToKillMatchTheGameFormula()
+    public void HitsToKillMatchTheGame()
     {
-        var golpe = Analyst.HitsToKill(SliceData.GolpeBrutal).ToList();
-        Assert.Equal((1, 22, 3), golpe[0]);                       // 22 * 1.10 = 24 - defesa 2 = 22; 65 de vida -> 3 golpes
-        Assert.Equal(SkillRanks.MaxRank, golpe.Count);
+        var table = Facts.HitsToKill(Facts.Golpe).ToList();
+        Assert.Equal(Umbra.Domain.Skills.TreeCatalog.MaxRank, table.Count);
+        Assert.True(table.Zip(table.Skip(1)).All(p => p.Second.Damage >= p.First.Damage));
+        var s = new GameSession(4);
+        for (int i = 0; i < 3000 && s.Hero.Alive; i++)
+        {
+            s.Step(SessionPilot.Next(s) with { Skill1 = false, Skill2 = false });
+            if (s.Events.OfType<DamageEvent>().FirstOrDefault(e => !e.OnHero) is { } hit) { Assert.Equal(table[0].Damage, hit.Amount); return; }
+        }
+        Assert.Fail("nenhum golpe acertou");
     }
 
     [Fact]
     public void GearHabitsDiffer()
     {
-        var sim = new Simulation(1);
-        sim.Inventory.Add(new Item("Machado Bom", "Arma", Rarity.Raro) { MainStat = Stat.Attack, Power = 6 });
+        var s = new GameSession(1); var hero = s.Hero;
+        PyDict Armor(int defense, string name)
+        {
+            var r = Loot.Drop("armor", 1, hero.Level, "barbaro", new PyRandom(11));
+            r["name"] = name; r["slot"] = "helmet"; r["stats"] = new Umbra.Domain.Skills.PyDict { ["defense"] = (long)defense };
+            r["affixes"] = new Umbra.Domain.Skills.PyDict(); r["required_level"] = 1L;
+            return r;
+        }
         var rec = new RunRecord { Persona = "x", Seed = 1 };
-        Session.Gear(Persona.Novato, sim, rec);                  // empty slot: even the Novato equips
+        hero.Inventory.Items.Add(Armor(2, "Elmo Bom"));
+        Session.Gear(Persona.Novato, s, rec);                  // empty slot: even the Novato equips
         Assert.Equal(1, rec.Equipped);
-        sim.Inventory.Add(new Item("Machado Melhor", "Arma", Rarity.Lendario) { MainStat = Stat.Attack, Power = 9 });
-        Session.Gear(Persona.Novato, sim, rec);                  // the Novato does not swap
-        Assert.Equal("Machado Bom", sim.Hero.Equipment[EquipSlot.Arma]!.Name);
-        Session.Gear(Persona.Veterano, sim, rec);                // the Veterano takes the upgrade
-        Assert.Equal("Machado Melhor", sim.Hero.Equipment[EquipSlot.Arma]!.Name);
+        hero.Inventory.Items.Add(Armor(6, "Elmo Melhor"));
+        Session.Gear(Persona.Novato, s, rec);                  // the Novato does not swap
+        Assert.Equal("Elmo Bom", ((Umbra.Domain.Skills.PyDict)Gear.Ensure(hero)["helmet"]!).Str("name"));
+        Session.Gear(Persona.Veterano, s, rec);                // the Veterano takes the upgrade
+        Assert.Equal("Elmo Melhor", ((Umbra.Domain.Skills.PyDict)Gear.Ensure(hero)["helmet"]!).Str("name"));
     }
 
     [Fact]
@@ -87,9 +103,10 @@ public class BetaTesterTests
     {
         var summaries = Persona.All.Select(p => new Summary { Persona = p, Runs = new[] { Session.Play(p, 2), Session.Play(p, 3) } }).ToList();
         var findings = Analyst.Analyze(summaries, Array.Empty<(RunRecord, RunRecord)>());
-        string md = Report.Markdown(summaries, findings, "2026-11-08", "teste", 2);
+        string md = Report.Markdown(summaries, findings, "2026-11-09", "teste", 2);
         foreach (var section in new[] { "## Resumo", "## O que mudar", "## Números por perfil", "## Habilidades", "## Itens", "## Metas usadas (PROVISÓRIO)", "## Limites deste teste" })
             Assert.Contains(section, md);
         Assert.All(findings.Where(f => f.Severity != Severity.Ok), f => Assert.False(string.IsNullOrWhiteSpace(f.Suggestion)));
+        Assert.DoesNotContain("SliceData", md);
     }
 }

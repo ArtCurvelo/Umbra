@@ -13,16 +13,7 @@ public static class Materials
     public static readonly Color Ember = Rgb(190, 82, 44), Blood = Rgb(168, 36, 40);
     public static readonly Color IronDark = Rgb(20, 18, 22), Iron = Rgb(46, 42, 48), IronLight = Rgb(98, 90, 86);
 
-    /// <summary>Rarity colours of UMBRA's default palette (game/accessibility/palette.py).</summary>
-    public static Color Rarity(Umbra.Domain.Gameplay.Rarity r) => r switch
-    {
-        Umbra.Domain.Gameplay.Rarity.Comum => Rgb(196, 196, 200),
-        Umbra.Domain.Gameplay.Rarity.Magico => Rgb(70, 140, 255),
-        Umbra.Domain.Gameplay.Rarity.Raro => Rgb(250, 222, 70),
-        _ => Rgb(255, 128, 32),
-    };
-
-    /// <summary>Colour of an item record: the rarity's (UMBRA names) for equipment, the record's own colour otherwise.</summary>
+    /// <summary>Colour of an item record: UMBRA's default palette (game/accessibility/palette.py) by rarity for equipment, the record's own colour otherwise.</summary>
     public static Color RarityOf(Umbra.Domain.Skills.PyDict record)
     {
         if (Umbra.Domain.Play.ItemView.Equipment(record) || record.Get("color") is not List<object?> { Count: >= 3 } rgb)

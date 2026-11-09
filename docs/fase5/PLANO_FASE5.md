@@ -431,3 +431,25 @@ Regras do documento de direção:
   - **Rótulo cortado:** o rótulo do UMBRA "CONCUSSÃO" não cabe no espaço de 52 px.
   - **Passivas de classe (`class:*`) fora da árvore:** ainda não aparecem na tela e esperam uma maquete.
 - **Risco:** as tabelas são lidas do disco (`res://data/umbra` globalizado). Um executável exportado precisa levar a pasta junto (Fase 6, empacotamento).
+
+## BetaTester nas regras reais e fim da `Simulation` (2026-11-09)
+- **O testador joga a `GameSession`:** herói, Brutos, itens e árvore reais.
+  - **Bot (`BotPlayer`):** lê só o que a tela mostra (preparação do Bruto e a casa marcada, recargas, Fúria). Esquiva saindo da casa marcada, porque `perform_attack` só acerta quem continua nela.
+  - **Pontos:** o perfil que gasta pontos sobe ranks por `TreeRules.Learn`.
+  - **Equipamento:** passa por `Gear.FromInventory`.
+- **Números do relatório:** vêm do jogo (`Facts`: herói, Bruto, custo e ganho das habilidades) ou são medidos na partida (dano por golpe do Bruto que acertou). A tabela de golpes por rank usa `attack_damage` e a armadura do Bruto; um teste confere que o primeiro golpe real tira exatamente o valor do rank 1.
+- **Mudanças de medida:**
+  - **"Esquivas bloqueadas" virou "esquivas tardias":** no UMBRA andar cancela o próprio golpe, então a esquiva nunca fica presa; agora conta o golpe que acertou mesmo assim.
+  - **Dano desperdiçado saiu:** a partida só informa a vida tirada.
+  - **Raridades:** passaram a ser as 6 do UMBRA.
+- **Execução sequencial:** os serviços das regras (`SkillEnv`, `EnemyAI.Active`) são do processo inteiro, como no UMBRA. 200 partidas levam 19 s.
+- **Removidos:**
+  - `Umbra.Domain.Gameplay` (Simulation, SliceData, ItemRules, SkillRanks, o autopiloto antigo) e os testes dele;
+  - na camada do Godot, as sobrecargas de itens PROVISÓRIOS.
+  - `InputFrame` foi para `Umbra.Domain.Play`.
+  - O que ainda valia dos testes antigos foi para `GameSessionTests`: gerador da cripta, clicar para andar, largar item.
+- **Testes:** xUnit 1 279/1 279 (eram 1 304; saíram os testes da `Simulation`), autoteste do Godot 36/36, `check.ps1` aprovado.
+- **Relatório (40 partidas por perfil, sementes 1–40):** `docs/betatest/regras_reais/`.
+  - **Resultado:** todos os perfis venceram todas as partidas, com a pior vida média entre 93% e 98%. A cripta cai em 8–18 s e um Bruto morre ~0,5 s depois do primeiro golpe. O Novato quase não é atingido.
+  - **Causa:** o travamento por golpes descrito na 5.8c. Ele está nas regras do UMBRA, não no port.
+  - **O teste "esquivar reduz o dano" saiu:** sem golpes que acertem, os dois perfis tomam ~0 de dano. Ele volta quando a slice tiver desafio (decisão do Game Director).

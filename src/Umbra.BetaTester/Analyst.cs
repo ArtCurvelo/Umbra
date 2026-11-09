@@ -1,5 +1,4 @@
 using System.Globalization;
-using Umbra.Domain.Gameplay;
 
 namespace Umbra.BetaTester;
 
@@ -19,12 +18,11 @@ public static class Targets
     public const double VeteranoLowestMin = .30, VeteranoLowestMax = .75; // ...but still ends a run with scars
     public const double ClearSecondsMin = 60, ClearSecondsMax = 240;   // casual clear of the crypt
     public const double VeteranoStrikeLandedMax = .30;                 // telegraphs must be dodgeable on reaction
-    public const double DodgeLockedMax = .25;                           // dodges blocked by the hero's own recovery
+    public const double DodgeLockedMax = .25;                           // dodges that come too late (the strike lands anyway)
     public const double KillSecondsMin = 1.0, KillSecondsMax = 5.0;    // first hit -> death of a common enemy
     public const double SpenderShareMin = .15;                          // Ruptura's share of an expert's damage
     public const double FuryCappedMax = .15;                            // share of the run sitting at full Fúria
     public const double WhiffMax = .30;                                 // casts that hit nothing
-    public const double OverkillMax = .30;
     public const double GearAttackShareMax = .60;                       // gear attack vs the base attack
     public const double IdleMax = .15;
 }
@@ -81,16 +79,16 @@ public static class Analyst
         else if (death < Targets.NovatoDeathMin)
             f.Add(new(Severity.Media, "Dificuldade", "Sem risco nem para o Novato",
                       $"O Novato morreu em {P(death)} das partidas, só com o ataque básico e sem esquivar (meta: ao menos {P(Targets.NovatoDeathMin)}). " +
-                      $"Terminou com {P(s.MeanLowestHealthShare)} da vida em média no pior momento. Cada golpe do Bruto tira " +
-                      $"{SliceData.Damage(SliceData.Brute.Attack, 1f, SliceData.Barbarian.Defense)} de {SliceData.Barbarian.MaxHealth} de vida (ataque {SliceData.Brute.Attack} − defesa {SliceData.Barbarian.Defense}).",
-                      "Mais inimigos por sala, Bruto um pouco mais forte, ou um inimigo que puna ficar parado."));
+                      $"Terminou com {P(s.MeanLowestHealthShare)} da vida em média no pior momento. {StrikeLine(s)} " +
+                      "No UMBRA todo acerto num inimigo comum cancela a preparação do golpe dele e o atordoa por 4 quadros: quem golpeia sem parar quase não é atingido.",
+                      "Decisão do Game Director: mais inimigos por sala, nível inicial menor, dificuldade maior, ou rever o cancelamento da preparação por acerto."));
         else
             f.Add(new(Severity.Ok, "Dificuldade", "Risco adequado para o Novato", $"Morreu em {P(death)} das partidas.", "Nada a mudar."));
-        double whiff = s.WhiffShare(SliceData.GolpeBrutal.Id);
+        double whiff = s.WhiffShare(Facts.Golpe);
         if (whiff > Targets.WhiffMax)
             f.Add(new(Severity.Media, "Controles", "Golpes no vazio demais para quem mira mal",
                       $"{P(whiff)} dos Golpes Brutais do Novato não acertaram nada (mira com até {N(s.Persona.AimErrorDegrees, "0")}° de erro).",
-                      "Aumentar o arco do Golpe Brutal ou virar o golpe para o inimigo mais próximo dentro de um ângulo."));
+                      "Ver por que o golpe não achou alvo (a Básica do UMBRA escolhe o inimigo mais próximo ou o da mira, a 1 casa)."));
     }
 
     private static void Expert(Summary s, List<Finding> f)
@@ -111,13 +109,13 @@ public static class Analyst
         if (s.Strikes > 0 && landed > Targets.VeteranoStrikeLandedMax)
             f.Add(new(Severity.Alta, "Combate", "O aviso do golpe do Bruto não dá tempo de esquivar",
                       $"Mesmo esquivando sempre, {P(landed)} dos golpes do Bruto acertaram o Veterano ({s.Strikes} golpes).",
-                      "Aumentar a preparação (hoje 35 ticks = 0,58 s) ou reduzir a folga do acerto."));
+                      $"Aumentar a preparação do Bruto (hoje {Facts.Brute().Windup} quadros = {N(Facts.Brute().Windup / 60.0, "0.00")} s)."));
         double locked = s.DodgeLockedShare;
         if (s.DodgesWanted > 0 && locked > Targets.DodgeLockedMax)
-            f.Add(new(Severity.Alta, "Combate", "O próprio golpe do herói impede a esquiva",
-                      $"Em {P(locked)} das vezes que o Veterano quis esquivar, ainda estava preso na recuperação do próprio ataque " +
-                      $"(Golpe Brutal: {SliceData.GolpeBrutal.RecoveryTicks} ticks; Ruptura: {SliceData.Ruptura.RecoveryTicks} ticks; preparação do Bruto: {SliceData.BruteWindupTicks}).",
-                      "Permitir cancelar a recuperação com movimento depois do impacto, ou encurtar a recuperação do Golpe Brutal."));
+            f.Add(new(Severity.Alta, "Combate", "A esquiva chega tarde demais",
+                      $"Em {P(locked)} das vezes que o Veterano esquivou (reage em {N(s.Persona.ReactionTicks / 60.0, "0.00")} s), o golpe acertou mesmo assim: " +
+                      $"sair da casa marcada levou mais que o resto da preparação do Bruto ({Facts.Brute().Windup} quadros).",
+                      "Preparação mais longa do Bruto ou arranque mais rápido do movimento."));
     }
 
     private static void DodgeReward(Summary vet, Summary agg, List<Finding> f)
@@ -148,29 +146,24 @@ public static class Analyst
                       "Inimigos que venham até o herói ou salas mais próximas."));
     }
 
-    /// <summary>Hits a skill needs to kill a Bruto at each grade (base hero, no gear): the same formula as the game.</summary>
-    public static IEnumerable<(int Rank, int Damage, int Hits)> HitsToKill(SkillDef skill, int attack = -1)
+    private static string StrikeLine(Summary s)
     {
-        attack = attack < 0 ? SliceData.Barbarian.Attack : attack;
-        for (int rank = 1; rank <= SkillRanks.MaxRank; rank++)
-        {
-            float factor = (float)(1 + SkillRanks.PerRank * (rank - 1));
-            int damage = SliceData.Damage(attack, skill.Multiplier * factor, SliceData.Brute.Defense);
-            yield return (rank, damage, (SliceData.Brute.MaxHealth + damage - 1) / damage);
-        }
+        var hero = Facts.Hero(); var brute = Facts.Brute();
+        return s.DamagePerStrike <= 0 ? $"Nenhum golpe do Bruto acertou (ataque do Bruto {brute.Attack}, armadura do Bárbaro {hero.Defense})."
+            : $"Cada golpe do Bruto que acertou tirou em média {N(s.DamagePerStrike, "0")} de {hero.MaxHealth} de vida (ataque do Bruto {brute.Attack}, armadura do Bárbaro {hero.Defense}).";
     }
 
     private static void Breakpoints(List<Finding> f)
     {
-        foreach (var skill in new[] { SliceData.GolpeBrutal, SliceData.Ruptura })
+        foreach (var id in new[] { Facts.Golpe, Facts.Ruptura })
         {
-            var rows = HitsToKill(skill).ToList();
+            var rows = Facts.HitsToKill(id).ToList();
             var dead = rows.Skip(1).Where(r => r.Hits == rows[rows.IndexOf(r) - 1].Hits).Select(r => r.Rank).ToList();
             if (dead.Count == 0) continue;
-            f.Add(new(Severity.Baixa, "Árvore", $"Graus de {skill.Name} que não mudam nada contra o Bruto",
-                      $"Golpes para derrotar um Bruto por grau: {string.Join(", ", rows.Select(r => $"grau {r.Rank} = {r.Hits} ({r.Damage} de dano)"))}. " +
-                      $"Os graus {string.Join(", ", dead)} gastam ponto sem tirar nenhum golpe.",
-                      "Ajustar o ganho por grau (hoje +10%, PROVISÓRIO) ou a vida do Bruto para cada grau cruzar um ponto de corte."));
+            f.Add(new(Severity.Baixa, "Árvore", $"Ranks de {Facts.Name(id)} que não mudam nada contra o Bruto",
+                      $"Golpes para derrotar um Bruto por rank (sem crítico nem combo): {string.Join(", ", rows.Select(r => $"rank {r.Rank} = {r.Hits} ({r.Damage} de dano)"))}. " +
+                      $"Os ranks {string.Join(", ", dead)} gastam ponto sem tirar nenhum golpe.",
+                      "Normal com ranks de ganho pequeno (+12% por passo; do 6 ao 15, meio passo). Se incomodar, é balanceamento do UMBRA (Game Director)."));
         }
     }
 
@@ -186,11 +179,11 @@ public static class Analyst
         else
             f.Add(new(Severity.Ok, "Balanceamento", "Tempo para derrotar um Bruto adequado", $"Mediana de {N(kill)} s.", "Nada a mudar."));
 
-        double spender = vet.DamageShare(SliceData.Ruptura.Id);
+        double spender = vet.DamageShare(Facts.Ruptura);
         if (spender < Targets.SpenderShareMin)
             f.Add(new(Severity.Media, "Habilidades", "Ruptura quase não entra na rotação",
                       $"Ruptura fez só {P(spender)} do dano do {vet.Persona.Name} (meta: ao menos {P(Targets.SpenderShareMin)}).",
-                      $"Custo menor (hoje {SliceData.Ruptura.Cost} de Fúria) ou mais Fúria por Golpe Brutal (hoje {SliceData.GolpeBrutal.FuryGain})."));
+                      $"Custo menor (hoje {Facts.Cost(Facts.Ruptura)} de Fúria) ou mais Fúria por Golpe Brutal (hoje {Facts.Gain(Facts.Golpe)})."));
         // Only players who spend Fúria say something about the resource (the Novato never casts Ruptura by habit).
         var spenders = all.Where(s => s.Persona.ConeGroup > 0).ToList();
         if (spenders.Count > 0 && spenders.MaxBy(s => s.FuryCappedShare) is { } cappedBy && cappedBy.FuryCappedShare > Targets.FuryCappedMax)
@@ -198,23 +191,17 @@ public static class Analyst
                       $"O {cappedBy.Persona.Name} (usa Ruptura com {cappedBy.Persona.ConeGroup}+ inimigos no cone) passou {P(cappedBy.FuryCappedShare)} da partida com a Fúria no máximo.",
                       "Ruptura útil contra um alvo só, ou outra forma de gastar Fúria."));
         Breakpoints(f);
-        var dash = vet.Skill(SliceData.Investida.Id);
-        if (dash.Casts > 0 && vet.WhiffShare(SliceData.Investida.Id) > .5)
+        var dash = vet.Skill(Facts.Investida);
+        if (dash.Casts > 0 && vet.WhiffShare(Facts.Investida) > .5)
             f.Add(new(Severity.Baixa, "Habilidades", "Investida erra o alvo com frequência",
-                      $"{P(vet.WhiffShare(SliceData.Investida.Id))} das Investidas do {vet.Persona.Name} não acertaram ninguém.",
+                      $"{P(vet.WhiffShare(Facts.Investida))} das Investidas do {vet.Persona.Name} não acertaram ninguém.",
                       "Mirar a Investida no inimigo mais próximo da direção ou aumentar a largura do acerto."));
-        foreach (var id in vet.SkillIds)
-        {
-            double over = vet.OverkillShare(id);
-            if (over > Targets.OverkillMax)
-                f.Add(new(Severity.Baixa, "Balanceamento", $"{SkillName.Of(id)} desperdiça dano em inimigos quase mortos",
-                          $"{P(over)} do dano da habilidade passou da vida que restava.", "Normal em golpes fortes; observar ao portar mais inimigos."));
-        }
-        double attackShare = vet.MeanAttackFromGear / SliceData.Barbarian.Attack;
+        int baseAttack = Facts.Hero().Attack;
+        double attackShare = vet.MeanAttackFromGear / baseAttack;
         if (attackShare > Targets.GearAttackShareMax)
             f.Add(new(Severity.Media, "Itens", "Equipamento pesa demais no ataque",
-                      $"O equipamento somou {N(vet.MeanAttackFromGear)} de ataque ao Bárbaro (base {SliceData.Barbarian.Attack}, +{P(attackShare)}) numa cripta só.",
-                      "Reduzir os afixos de ataque ou a chance de Raro/Lendário (números PROVISÓRIOS de ItemRules)."));
+                      $"O equipamento somou {N(vet.MeanAttackFromGear)} de ataque ao Bárbaro (base {baseAttack}, +{P(attackShare)}) numa cripta só.",
+                      "Balanceamento das tabelas de itens do UMBRA (afixos de ataque, chance de raridade): decisão do Game Director."));
         var bag = all.Sum(s => s.BagFullRuns);
         if (bag > 0)
             f.Add(new(Severity.Baixa, "Itens", "Mochila cheia durante a partida", $"Aconteceu em {bag} partidas.", "Avisar no HUD e permitir descartar rápido."));

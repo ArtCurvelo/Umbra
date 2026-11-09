@@ -1,31 +1,42 @@
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
-using Umbra.Domain.Gameplay;
+using Umbra.Domain.Items;
+using Umbra.Domain.Play;
+using Umbra.Domain.Skills;
 
 namespace Umbra.BetaTester;
 
 /// <summary>
-/// One game played by one persona: the bot drives the real <see cref="Simulation"/> tick by tick, uses the inventory and the
-/// tree the way the menus do, and everything that happens is measured into a <see cref="RunRecord"/>. Exceptions, stuck
-/// heroes and runs that never end are results too, not crashes of the tester.
+/// One game played by one persona: the bot drives the real <see cref="GameSession"/> (UMBRA's rules, step 5.8c) tick by
+/// tick, uses the inventory and the tree the way the menus do, and everything that happens is measured into a
+/// <see cref="RunRecord"/>. Exceptions, stuck heroes and runs that never end are results too, not crashes of the tester.
+/// Runs share the rules' process-wide services (SkillEnv, EnemyAI.Active), so they must run one at a time.
 /// </summary>
 public static class Session
 {
-    public const int MaxTicks = 10 * 60 * SliceData.TicksPerSecond;   // 10 minutes of game time
-    public const int StuckLimit = 3 * SliceData.TicksPerSecond;       // trying to move for 3 s without moving
+    public const int MaxTicks = 10 * 60 * Facts.TicksPerSecond;   // 10 minutes of game time
+    public const int StuckLimit = 3 * Facts.TicksPerSecond;       // trying to move for 3 s without moving
+    /// <summary>Ticks after a cast in which a hit still counts for it (the Básica lands after its 5-frame wind-up; Investida
+    /// travels a few tiles).</summary>
+    public const int HitWindow = 14;
 
-    /// <summary>Points plan of a player who spends them (the slice starts with 5): the attack, then the spender, then the dash.</summary>
+    /// <summary>Points plan of a player who spends them (the slice starts with 3): the attack, the spender, the attack again,
+    /// then the dash. The tree screen does the same through TreeRules.Learn.</summary>
     public static readonly string[] PointsPlan =
-    {
-        SliceData.GolpeBrutal.Id, SliceData.Ruptura.Id, SliceData.GolpeBrutal.Id, SliceData.Ruptura.Id, SliceData.Investida.Id,
-    };
+        { "learn:" + Facts.Golpe, "learn:" + Facts.Ruptura, "learn:" + Facts.Golpe, "learn:" + Facts.Investida };
+
+    private static readonly object RunGate = new();
 
     public static RunRecord Play(Persona persona, ulong seed)
     {
+        Facts.Load();
         var rec = new RunRecord { Persona = persona.Id, Seed = seed };
-        try { Run(persona, seed, rec); }
-        catch (Exception ex) { rec.Outcome = Outcome.Crashed; rec.Error = $"{ex.GetType().Name}: {ex.Message}"; }
+        lock (RunGate)
+        {
+            try { Run(persona, seed, rec); }
+            catch (Exception ex) { rec.Outcome = Outcome.Crashed; rec.Error = $"{ex.GetType().Name}: {ex.Message}"; }
+        }
         return rec;
     }
 
@@ -34,100 +45,115 @@ public static class Session
 
     private static void Run(Persona persona, ulong seed, RunRecord rec)
     {
-        var sim = new Simulation(seed);
-        var hero = sim.Hero;
+        var s = new GameSession(seed);
+        var hero = s.Hero;
         var bot = new BotPlayer(persona, StableSeed(persona, seed));
-        rec.Enemies = sim.Enemies.Count; rec.LowestHealth = hero.Health;
-        if (persona.SpendsPoints) foreach (var skill in PointsPlan) if (hero.Ranks.Raise(skill)) rec.PointsSpent++;
+        rec.Enemies = s.Enemies.Count; rec.LowestHealth = hero.Health;
+        if (persona.SpendsPoints) foreach (var key in PointsPlan) if (TreeRules.Learn(hero, key)) rec.PointsSpent++;
 
         var firstHit = new Dictionary<int, int>();
         var lastSkill = new Dictionary<int, string>();
         var trace = new StringBuilder();
-        bool wasDashing = false; int stuck = 0;
+        string? open = null; int openTick = 0; bool openHit = false;   // the latest cast and whether it has hit yet
+        int stuck = 0;
         rec.Outcome = Outcome.Timeout;
 
-        while (sim.Tick < MaxTicks)
+        void Close() { if (open != null && !openHit) rec.Skill(open).Whiffs++; open = null; }
+
+        while (s.Tick < MaxTicks)
         {
             if (!hero.Alive) { rec.Outcome = Outcome.Died; break; }
-            if (sim.Cleared && (sim.Drops.Count == 0 || sim.BagFull)) { rec.Outcome = Outcome.Cleared; break; }
+            if (s.Cleared && s.Items.All(i => bot.Skipped.Contains(i.Id) || BagFull(s) && i.Kind is "weapon" or "armor" or "accessory"))
+            { rec.Outcome = Outcome.Cleared; break; }
 
-            var healthBefore = sim.Enemies.ToDictionary(e => e.Id, e => e.Health);
-            var input = bot.Next(sim);
-            var before = hero.Position;
-            sim.Step(input);
+            var input = bot.Next(s);
+            var before = s.HeroWorld;
+            s.Step(input);
+            bot.Observe(s);
 
-            string? cast = null; int hitsThisTick = 0;
-            foreach (var ev in sim.Events.OfType<SkillEvent>()) { cast = ev.SkillId; rec.Skill(ev.SkillId).Casts++; }
-            string current = cast ?? (hero.DashTicks > 0 || wasDashing ? SliceData.Investida.Id : hero.LastSkill ?? SliceData.GolpeBrutal.Id);
-            foreach (var ev in sim.Events)
+            foreach (var ev in s.Events.OfType<CastEvent>())
+            {
+                Close();
+                open = ev.SkillId; openTick = s.Tick; openHit = false; rec.Skill(ev.SkillId).Casts++;
+            }
+            if (open != null && s.Tick - openTick > HitWindow) Close();
+            string current = open ?? s.LastCast ?? Facts.Golpe;
+            foreach (var ev in s.Events)
             {
                 switch (ev)
                 {
-                    case HitEvent { OnHero: true } h:
+                    case DamageEvent { OnHero: true } h:
                         rec.DamageTaken += h.Amount; break;
-                    case HitEvent h:
+                    case DamageEvent h:
                         var use = rec.Skill(current);
-                        int left = healthBefore.GetValueOrDefault(h.TargetId);
-                        use.Hits++; use.Damage += Math.Min(h.Amount, left); use.Overkill += Math.Max(0, h.Amount - left);
-                        hitsThisTick++; lastSkill[h.TargetId] = current;
-                        if (!firstHit.ContainsKey(h.TargetId)) firstHit[h.TargetId] = sim.Tick;
-                        if (rec.FirstContactTick < 0) rec.FirstContactTick = sim.Tick;
+                        use.Hits++; use.Damage += h.Amount; openHit = true;
+                        lastSkill[h.TargetId] = current;
+                        firstHit.TryAdd(h.TargetId, s.Tick);
+                        if (rec.FirstContactTick < 0) rec.FirstContactTick = s.Tick;
                         break;
-                    case DiedEvent d:
+                    case DeathEvent d:
                         rec.Kills++;
-                        rec.Skill(lastSkill.GetValueOrDefault(d.ActorId, current)).Kills++;
-                        rec.KillTicks.Add(sim.Tick - firstHit.GetValueOrDefault(d.ActorId, sim.Tick));
+                        rec.Skill(lastSkill.GetValueOrDefault(d.EnemyId, current)).Kills++;
+                        rec.KillTicks.Add(s.Tick - firstHit.GetValueOrDefault(d.EnemyId, s.Tick));
                         break;
-                    case StrikeEvent s:
-                        if (s.Landed) rec.StrikesLanded++; else rec.StrikesMissed++;
+                    case StrikeEvent st:
+                        if (st.Landed) rec.StrikesLanded++; else rec.StrikesMissed++;
                         break;
-                    case DroppedEvent dr:
-                        rec.DropsByRarity[(int)dr.Drop.Item.Rarity]++; break;
-                    case PickedUpEvent:
-                        rec.PickedUp++; Gear(persona, sim, rec); break;
+                    case ItemDroppedEvent dr when ItemView.Equipment(dr.Item.Data):
+                        var rarity = ItemView.Rarity(dr.Item.Data);
+                        rec.DropsByRarity[rarity] = rec.DropsByRarity.GetValueOrDefault(rarity) + 1;
+                        break;
+                    case ItemTakenEvent { ToBag: true }:
+                        rec.PickedUp++; Gear(persona, s, rec); break;
+                    case LevelUpEvent:
+                        rec.LevelUps++; break;
                 }
             }
-            if (cast != null && cast != SliceData.Investida.Id && hitsThisTick == 0) rec.Skill(cast).Whiffs++;
-            if (wasDashing && hero.DashTicks == 0 && hero.DashHits.Count == 0) rec.Skill(SliceData.Investida.Id).Whiffs++;
-            wasDashing = hero.DashTicks > 0;
 
-            if (hero.Fury >= SliceData.FuryMax) rec.FuryCappedTicks++;
-            if (sim.BagFull && sim.Drops.Count > 0) rec.BagFullTicks++;
-            bool pressing = input.Attack || input.Skill1 || input.Skill2 || input.Move.LengthSquared() > 1e-4f || hero.Destination != null;
-            if (!pressing && !sim.Cleared && hero.Recovery == 0 && hero.DashTicks == 0) rec.IdleTicks++;
-            bool wantsToMove = input.Move.LengthSquared() > 1e-4f || hero.Destination != null;
-            stuck = wantsToMove && hero.Recovery == 0 && hero.DashTicks == 0 && Vector2.Distance(before, hero.Position) < .002f ? stuck + 1 : 0;
+            if (hero.MaxResource > 0 && hero.Resource >= hero.MaxResource) rec.FuryCappedTicks++;
+            if (BagFull(s) && s.Items.Any(i => ItemView.Equipment(i.Data))) rec.BagFullTicks++;
+            bool busy = hero.Pending != null || s.Dashing;
+            bool pressing = input.Attack || input.Skill1 || input.Skill2 || input.Move.LengthSquared() > 1e-4f || s.Destination != null;
+            if (!pressing && !s.Cleared && !busy) rec.IdleTicks++;
+            bool wantsToMove = input.Move.LengthSquared() > 1e-4f || s.Destination != null;
+            stuck = wantsToMove && !busy && Vector2.Distance(before, s.HeroWorld) < .002f ? stuck + 1 : 0;
             rec.LongestStuckTicks = Math.Max(rec.LongestStuckTicks, stuck);
             if (stuck >= StuckLimit) { rec.Outcome = Outcome.Stuck; break; }
             rec.LowestHealth = Math.Min(rec.LowestHealth, hero.Health);
-            if (sim.Tick % 60 == 0) trace.Append($"{hero.Position.X:F3},{hero.Position.Y:F3},{hero.Health},{sim.EnemiesRemaining};");
+            if (s.Tick % 60 == 0) trace.Append($"{s.HeroWorld.X:F3},{s.HeroWorld.Y:F3},{hero.Health},{s.EnemiesRemaining};");
         }
+        Close();
 
-        rec.Ticks = sim.Tick;
+        rec.Ticks = s.Tick;
         rec.MaxHealth = hero.MaxHealth;
         rec.DodgesStarted = bot.DodgesStarted; rec.DodgesLocked = bot.DodgesLocked;
-        rec.AttackFromGear = hero.Equipment.Total(Stat.Attack);
-        rec.DefenseFromGear = hero.Equipment.Total(Stat.Defense);
-        rec.HealthFromGear = hero.Equipment.Total(Stat.Health);
-        trace.Append(rec.Outcome).Append('|').Append(string.Join(',', sim.Inventory.Select(i => i.Name + i.Tag + i.Power)));
+        // Attack and armor above the base: the slice's Bárbaro buys no tree effects that add them, so it is the gear.
+        rec.AttackFromGear = hero.Attack - hero.BaseAttack;
+        rec.DefenseFromGear = hero.Defense - hero.BaseDefense;
+        rec.HealthFromGear = (int)Umbra.Domain.Items.Gear.Records(hero).Sum(r => ItemView.Total(r, "health"));
+        trace.Append(rec.Outcome).Append('|').Append(string.Join(',', hero.Inventory.Items.Select(i => ItemView.Name(i) + ItemView.Tag(i))));
         rec.Digest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(trace.ToString())))[..16];
     }
 
-    /// <summary>The bot's own judgement of an item (a player's rule of thumb, not a game rule).</summary>
-    public static double Score(Item? item) =>
-        item == null ? -1 : item.Total(Stat.Attack) * 3 + item.Total(Stat.Defense) * 2 + item.Total(Stat.Health) * .5;
+    public static bool BagFull(GameSession s) => s.Hero.Inventory.Items.Count >= s.Hero.Inventory.Capacity;
 
-    /// <summary>Equips from the bag the way the persona would in the inventory screen.</summary>
-    public static void Gear(Persona persona, Simulation sim, RunRecord rec)
+    /// <summary>The bot's own judgement of an item (a player's rule of thumb, not a game rule): what the tooltip shows.</summary>
+    public static double Score(PyDict? item) =>
+        item == null ? -1 : ItemView.Total(item, "attack") * 3 + ItemView.Total(item, "defense") * 2 + ItemView.Total(item, "health") * .5
+                            + item.Num("value", 0) * 2;
+
+    /// <summary>Equips from the bag the way the persona would in the inventory screen (Gear.from_inventory).</summary>
+    public static void Gear(Persona persona, GameSession s, RunRecord rec)
     {
         if (persona.Gear == GearHabit.Never) return;
-        for (int i = sim.Inventory.Count - 1; i >= 0; i--)
+        var hero = s.Hero; var loadout = Umbra.Domain.Items.Gear.Ensure(hero);
+        for (int i = hero.Inventory.Items.Count - 1; i >= 0; i--)
         {
-            var item = sim.Inventory[i];
-            if (sim.Hero.Equipment.TargetFor(item) is not { } slot) continue;
-            var worn = sim.Hero.Equipment[slot];
-            bool take = worn == null || (persona.Gear == GearHabit.Upgrades && Score(item) > Score(worn));
-            if (take && sim.Equip(i)) rec.Equipped++;
+            var item = hero.Inventory.Items[i];
+            if (!ItemView.Equipment(item) || Umbra.Domain.Items.Gear.TargetSlot(hero, item) is not { } slot) continue;
+            var worn = loadout.Get(slot) as PyDict;
+            bool take = worn == null || persona.Gear == GearHabit.Upgrades && Score(item) > Score(worn);
+            if (take && Umbra.Domain.Items.Gear.FromInventory(hero, i).Ok) rec.Equipped++;
         }
     }
 }

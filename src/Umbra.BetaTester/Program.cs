@@ -19,7 +19,8 @@ var summaries = new List<Summary>();
 var replays = new List<(RunRecord, RunRecord)>();
 foreach (var persona in personas)
 {
-    var records = Enumerable.Range(0, runs).AsParallel().AsOrdered().Select(i => Session.Play(persona, first + (ulong)i)).ToList();
+    // one at a time: the rules' services (SkillEnv, EnemyAI.Active) are process-wide, as in UMBRA
+    var records = Enumerable.Range(0, runs).Select(i => Session.Play(persona, first + (ulong)i)).ToList();
     summaries.Add(new Summary { Persona = persona, Runs = records });
     foreach (var rec in records.Take(3)) replays.Add((rec, Session.Play(persona, rec.Seed)));
     Console.WriteLine($"{persona.Name,-10} {records.Count} partidas: venceu {records.Count(x => x.Outcome == Outcome.Cleared)}, " +

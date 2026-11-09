@@ -1,5 +1,4 @@
 using Godot;
-using Umbra.Domain.Gameplay;
 using Umbra.Domain.Heroes;
 using Umbra.Domain.Items;
 using Umbra.Domain.Play;

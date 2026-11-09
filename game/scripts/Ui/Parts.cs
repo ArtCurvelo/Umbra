@@ -1,5 +1,4 @@
 using Godot;
-using Umbra.Domain.Gameplay;
 using Umbra.Domain.Play;
 using Umbra.Domain.Skills;
 
@@ -97,46 +96,7 @@ public static class Parts
 
     public static void Box(Control c, Rect2 r) { c.DrawRect(r, Materials.Rgb(12, 11, 14, .92f)); c.DrawRect(r, Materials.Iron, false, 2); }
 
-    public static string Tag(Rarity r) => Loot.Tags[(int)r];
-
-    public static void ItemSlot(Control c, Rect2 r, Item? item, string? label, bool focus)
-    {
-        c.DrawRect(r, Materials.Rgb(14, 12, 16));
-        c.DrawRect(r, item != null ? Materials.Rarity(item.Rarity) : Materials.Iron, false, item != null ? 2 : 1);
-        if (item != null) UiKit.TextIn(c, ItemText.Short(item.Slot), r, 22, Materials.Rarity(item.Rarity));
-        else if (label != null) UiKit.TextIn(c, label, r, 11, Faint);
-        if (focus) c.DrawRect(r.Grow(3), Materials.Gold, false, 2);
-    }
-
-    /// <summary>Item tooltip: name in its rarity colour with the tag, type, main stat, affixes and, when given, the
-    /// comparison with the equipped item in colour AND words ("melhor"/"pior").</summary>
-    public static void Tooltip(Control c, Rect2 r, Item item, string type, IReadOnlyList<(string Text, bool Better)>? compare)
-    {
-        var color = Materials.Rarity(item.Rarity);
-        c.DrawRect(r, Materials.Rgb(10, 9, 12, .96f));
-        c.DrawRect(r, color, false, 2);
-        c.DrawRect(new Rect2(r.Position, new Vector2(r.Size.X, 52)), new Color(color, .14f));
-        UiKit.TextIn(c, $"[{item.Tag}] {item.Name}", new Rect2(r.Position + new Vector2(0, 2), new Vector2(r.Size.X, 30)), 22, color, HorizontalAlignment.Left, 12);
-        UiKit.TextIn(c, item.RarityName + "  —  " + type, new Rect2(r.Position + new Vector2(0, 30), new Vector2(r.Size.X, 18)), 11, Materials.Ash, HorizontalAlignment.Left, 12);
-        float y = r.Position.Y + 62;
-        UiKit.TextIn(c, ItemText.Main(item), new Rect2(r.Position.X, y, r.Size.X, 30), 22, Materials.Bone, HorizontalAlignment.Left, 12); y += 34;
-        foreach (var a in item.Affixes) { UiKit.TextIn(c, ItemText.Affix(a), new Rect2(r.Position.X, y, r.Size.X, 28), 22, Materials.Rgb(140, 170, 230), HorizontalAlignment.Left, 12); y += 28; }
-        if (compare == null || compare.Count == 0) return;
-        y += 8;
-        c.DrawRect(new Rect2(r.Position.X + 12, y, r.Size.X - 24, 1), Materials.Iron);
-        UiKit.Text(c, "COMPARADO AO EQUIPADO", new Vector2(r.Position.X + 12, y + 18), 11, Materials.Ash); y += 26;
-        foreach (var (text, better) in compare)
-        {
-            var row = new Rect2(r.Position.X, y, r.Size.X, 26);
-            UiKit.TextIn(c, text, row, 22, better ? Good : Bad, HorizontalAlignment.Left, 12);
-            UiKit.TextIn(c, better ? "melhor" : "pior", row, 11, Materials.Ash, HorizontalAlignment.Right, 12);
-            y += 26;
-        }
-    }
-
-    public static float TooltipHeight(Item item, int compareLines) => 62 + 34 + item.Affixes.Count * 28 + (compareLines > 0 ? 34 + compareLines * 26 : 0) + 14;
-
-    // ------------------------------------------------------------------ UMBRA item records (step 5.8c)
+    // ------------------------------------------------------------------ item records (UMBRA's, since step 5.8c)
     public static void ItemSlot(Control c, Rect2 r, PyDict? record, string? label, bool focus)
     {
         c.DrawRect(r, Materials.Rgb(14, 12, 16));
@@ -177,23 +137,4 @@ public static class Parts
     public static float TooltipHeight(PyDict record, int compareLines) =>
         62 + ItemView.StatLines(record).Count * 30 + ItemView.AffixLines(record).Count * 28 + 22
         + (compareLines > 0 ? 34 + compareLines * 26 : 0) + 14;
-}
-
-/// <summary>Display text of item stats (PROVISIONAL numbers live in Umbra.Domain.Gameplay.ItemRules).</summary>
-public static class ItemText
-{
-    /// <summary>Two-letter mark of the item type in its slot (placeholder for the icons of the art phase).</summary>
-    public static string Short(string slot) => slot switch
-    {
-        "Arma" => "AR", "Anel" => "AN", "Amuleto" => "AM", "Elmo" => "EL", "Peitoral" => "PE", "Luvas" => "LU", "Botas" => "BO", "Mão secundária" => "MS", _ => "?",
-    };
-
-    public static string StatName(Stat s) => s switch { Stat.Attack => "ataque", Stat.Defense => "defesa", _ => "vida" };
-    public static string Main(Item item) => item.MainStat switch
-    {
-        Stat.Attack => $"Dano +{item.Power}",
-        Stat.Defense => $"Armadura +{item.Power}",
-        _ => $"Vida +{item.Power}",
-    };
-    public static string Affix(Affix a) => $"+{a.Value} de {StatName(a.Stat)}";
 }

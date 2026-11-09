@@ -102,6 +102,8 @@ public sealed class Enemy : ITarget
     public bool Alive => IsAlive;
     public int MoveCooldown, AttackCooldown, Windup, MemoryFrames, StaggerFrames, StuckFrames, LastDamageAmount;
     public string? CurrentAttack, LastAttackKind;
+    /// <summary>Whether the last perform_attack hit (presentation and telemetry only; UMBRA returns it).</summary>
+    public bool LastAttackLanded;
     public (int X, int Y)? AttackTarget, LastKnownPlayer, LastAttackTargetPosition;
     public (int X, int Y) AttackDirection { get; set; } = (0, 1);
     public (int X, int Y) AttackOrigin, PreviousPosition;
@@ -290,6 +292,7 @@ public sealed class Enemy : ITarget
             if (kind == "normal" && EnemyType == "parasita") Health = Math.Min(MaxHealth, Health + 3);
         }
         AttackCooldown = kind == "ranged" ? 65 : 45;
+        LastAttackLanded = hit;
         CurrentAttack = null; Windup = 0; MoveCooldown = 15;
         AiState = LastKnownPlayer != null ? "chase" : "idle";
         return hit;

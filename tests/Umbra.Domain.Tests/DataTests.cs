@@ -1,9 +1,10 @@
 using Umbra.Domain.Data;
-using Umbra.Domain.Gameplay;
+using Umbra.Domain.Enemies;
+using Umbra.Domain.Heroes;
 
 namespace Umbra.Domain.Tests;
 
-/// <summary>Phase 5, step 1: UMBRA's data read in C#, and the slice's typed numbers checked against it.</summary>
+/// <summary>Phase 5, step 1: UMBRA's data read in C#, and the typed export checked against the rules' tables.</summary>
 public class DataTests
 {
     private static readonly UmbraData Data = UmbraData.Load(UmbraData.FindRoot());
@@ -27,40 +28,26 @@ public class DataTests
         }
     }
 
+    /// <summary>The typed export (UmbraData) and the rules' tables (HeroTables, FoeTables) read the same numbers.</summary>
     [Fact]
-    public void SliceNumbersMatchUmbra()
+    public void TypedExportMatchesTheRules()
     {
-        var barbaro = Data.Classes["barbaro"];
-        Assert.Equal(SliceData.Barbarian.MaxHealth, barbaro.Health);
-        Assert.Equal(SliceData.Barbarian.Attack, barbaro.Attack);
-        Assert.Equal(SliceData.Barbarian.Defense, barbaro.Defense);
-        Assert.Equal(SliceData.FuryMax, barbaro.ResourceMax);
+        HeroTables.Load(UmbraData.FindRoot()); FoeTables.Load(UmbraData.FindRoot());
+        var barbaro = Data.Classes["barbaro"]; var stats = HeroTables.Stats("barbaro");
+        Assert.Equal(barbaro.Health, (int)stats.Num("health"));
+        Assert.Equal(barbaro.Attack, (int)stats.Num("attack"));
+        Assert.Equal(barbaro.Defense, (int)stats.Num("defense"));
+        Assert.Equal(barbaro.ResourceMax, (int)HeroTables.Spec("barbaro").Num("resource_max"));
         var bruto = Data.Enemies["bruto"];
-        Assert.Equal(SliceData.Brute.MaxHealth, bruto.Health);
-        Assert.Equal(SliceData.Brute.Attack, bruto.Attack);
-        Assert.Equal(SliceData.Brute.Defense, bruto.Defense);
-        Assert.Equal(SliceData.BruteWindupTicks, bruto.Windup);
-        Assert.Equal(60f / bruto.MoveCooldown, SliceData.Brute.Speed, 4);
-        Assert.Equal((int)SliceData.BruteDetection, bruto.Detection);
-        foreach (var slice in new[] { SliceData.GolpeBrutal, SliceData.Ruptura, SliceData.Investida })
+        var enemy = new Umbra.Domain.Enemies.Enemy((0, 0), 1, false, "bruto");
+        Assert.Equal(bruto.Windup, enemy.WindupDuration);
+        Assert.Equal(bruto.Detection, enemy.DetectionRange);
+        foreach (var id in new[] { "barb2_golpe_brutal", "barb2_ruptura", "barb2_investida" })
         {
-            var s = Data.Skill(slice.Id);
-            Assert.Equal(s.Name, slice.Name);
-            Assert.Equal(s.Multiplier, slice.Multiplier, 4);
-            Assert.Equal(s.Cost, slice.Cost);
-            Assert.Equal(s.ResourceGain, slice.FuryGain);
-            Assert.Equal(s.Cooldown, slice.CooldownTicks);
+            var typed = Data.Skill(id); var row = HeroTables.BasicRow(id) ?? HeroTables.SkillRow(id)!;
+            Assert.Equal(typed.Name, row.Str("name"));
+            Assert.Equal(typed.Multiplier, row.Num("multiplier"), 4);
+            Assert.Equal(typed.Cost, (int)row.Num("cost"));
         }
-        Assert.Equal(2, Data.Skill(SliceData.Ruptura.Id).Range);
-    }
-
-    [Fact]
-    public void RarityMultipliersMatchUmbra()
-    {
-        var multipliers = Data.Rules.GetProperty("rarity").GetProperty("MULTIPLIER");
-        string[] names = { "Comum", "Mágico", "Raro", "Lendário" };
-        for (int i = 0; i < names.Length; i++) Assert.Equal(multipliers.GetProperty(names[i]).GetDouble(), ItemRules.RarityMultiplier[i], 6);
-        var tags = Data.Rules.GetProperty("rarity").GetProperty("TAG");
-        for (int i = 0; i < names.Length; i++) Assert.Equal(tags.GetProperty(names[i]).GetString(), Loot.Tags[i]);
     }
 }

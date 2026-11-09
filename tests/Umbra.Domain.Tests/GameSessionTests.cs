@@ -1,7 +1,7 @@
 using System.Numerics;
 using Umbra.Domain.Data;
 using Umbra.Domain.Enemies;
-using Umbra.Domain.Gameplay;
+using Umbra.Domain.Core;
 using Umbra.Domain.Heroes;
 using Umbra.Domain.Play;
 
@@ -17,22 +17,6 @@ public class GameSessionTests
     /// <summary>Walks to the nearest living enemy, uses Ruptura with enough Fúria, Investida when far, attacks when adjacent;
     /// after the fight walks over the drops.</summary>
     public static InputFrame Bot(GameSession s) => SessionPilot.Next(s);
-    private static InputFrame OldBot(GameSession s)
-    {
-        var hero = s.Hero; var here = s.HeroWorld;
-        var target = s.Enemies.Where(e => e.Alive).OrderBy(e => Vector2.Distance(GameSession.ToWorld(e.Position), here)).FirstOrDefault();
-        if (target == null)
-        {
-            var item = s.Items.OrderBy(i => Vector2.Distance(GameSession.ToWorld(i.Cell), here)).FirstOrDefault();
-            return item == null ? InputFrame.None(here) : new InputFrame(Vector2.Normalize(GameSession.ToWorld(item.Cell) - here + new Vector2(1e-3f, 0)), null, here, false, false, false);
-        }
-        var at = GameSession.ToWorld(target.Position); var to = at - here;
-        int steps = Math.Max(Math.Abs(target.X - hero.X), Math.Abs(target.Y - hero.Y));
-        bool near = steps <= 1;
-        bool skill1 = near && hero.Resource >= 28 && s.Tick % 7 == 0;
-        bool skill2 = !near && steps <= 4 && hero.Skills.Cooldowns.GetValueOrDefault("barb2_investida") == 0 && s.Tick % 11 == 0;
-        return new InputFrame(near ? Vector2.Zero : Vector2.Normalize(to), null, at, near, skill1, skill2);
-    }
 
     private static (GameSession Session, List<PlayEvent> Events) Play(ulong seed, int ticks)
     {
@@ -93,5 +77,38 @@ public class GameSessionTests
         }
         Assert.Contains(events, e => e is WindupEvent);
         Assert.Contains(events, e => e is DamageEvent { OnHero: true });
+    }
+
+    [Fact]
+    public void CryptRngIsDeterministic()
+    {
+        var a = new Rng(5); var b = new Rng(5);
+        Assert.Equal(Enumerable.Range(0, 20).Select(_ => a.NextULong()), Enumerable.Range(0, 20).Select(_ => b.NextULong()));
+        var r = new Rng(9);
+        Assert.All(Enumerable.Range(0, 1000).Select(_ => r.Range(2, 5)), v => Assert.InRange(v, 2, 5));
+    }
+
+    [Fact]
+    public void ClickToMoveWalksToTheDestinationAndStops()
+    {
+        var s = new GameSession(4);
+        foreach (var e in s.Enemies) e.IsAlive = false;
+        var goal = GameSession.ToWorld((s.Hero.X + 2, s.Hero.Y));
+        Assert.Equal(0, s.Grid.Cell(s.Hero.X + 2, s.Hero.Y));
+        s.Step(new InputFrame(Vector2.Zero, goal, goal, false, false, false));
+        for (int i = 0; i < 120; i++) s.Step(new InputFrame(Vector2.Zero, null, goal, false, false, false));
+        Assert.True(Vector2.Distance(s.HeroWorld, goal) < .15f, $"{s.HeroWorld} -> {goal}");
+        Assert.Null(s.Destination);
+    }
+
+    [Fact]
+    public void DiscardDropsAtTheFeetAndStepsBackPickItUp()
+    {
+        var s = new GameSession(4);
+        s.Hero.Inventory.Items.Add(Umbra.Domain.Items.Loot.Drop("armor", 1, s.Hero.Level, "barbaro", new Umbra.Domain.Util.PyRandom(3)));
+        var item = s.Discard(0)!;
+        Assert.Empty(s.Hero.Inventory.Items);
+        Assert.Equal(s.Hero.Position, item.Cell);
+        Assert.Contains(item, s.Items);
     }
 }

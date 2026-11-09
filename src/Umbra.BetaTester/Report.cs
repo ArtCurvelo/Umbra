@@ -1,5 +1,4 @@
 using System.Text;
-using Umbra.Domain.Gameplay;
 using static Umbra.BetaTester.Analyst;
 
 namespace Umbra.BetaTester;
@@ -13,14 +12,16 @@ public static class Report
         [Severity.Baixa] = "Prioridade baixa", [Severity.Ok] = "Está bom",
     };
 
+    private static readonly string[] Rarities = { "Comum", "Mágico", "Raro", "Lendário", "Único", "Único Mítico" };
+
     public static string Markdown(IReadOnlyList<Summary> all, IReadOnlyList<Finding> findings, string date, string version, ulong firstSeed)
     {
         var md = new StringBuilder();
         int runs = all.Sum(s => s.Count);
         md.AppendLine($"# Relatório do beta tester — {date}").AppendLine();
-        md.AppendLine($"Versão testada: `{version}` (vertical slice: Bárbaro na cripta com {CryptGeneratorEnemies()} Brutos Abissais). ");
+        md.AppendLine($"Versão testada: `{version}` (vertical slice: Bárbaro nível {Facts.Hero().Level} na cripta com {CryptGeneratorEnemies()} Brutos Abissais, regras reais do UMBRA desde a 5.8c). ");
         md.AppendLine($"{runs} partidas jogadas por {all.Count} perfis de jogador, sementes {firstSeed} a {firstSeed + (ulong)all.Max(s => s.Count) - 1}, " +
-                      "sem janela, com as regras reais do domínio. O bot só aperta os mesmos botões de um jogador (andar, mirar, golpes, inventário, árvore).").AppendLine();
+                      "sem janela, uma de cada vez, com as regras do UMBRA portadas para C#. O bot só aperta os mesmos botões de um jogador (andar, mirar, golpes, inventário, árvore).").AppendLine();
 
         var todo = findings.Where(x => x.Severity != Severity.Ok).ToList();
         md.AppendLine("## Resumo").AppendLine();
@@ -48,7 +49,7 @@ public static class Report
         }
 
         md.AppendLine("## Números por perfil").AppendLine();
-        md.AppendLine("| Perfil | Partidas | Venceu | Morreu | Travou/erro | Tempo (mediana) | Pior vida (média) | Dano tomado | Golpes do Bruto que acertaram | Esquivas bloqueadas | Fúria cheia | Itens/partida |");
+        md.AppendLine("| Perfil | Partidas | Venceu | Morreu | Travou/erro | Tempo (mediana) | Pior vida (média) | Dano tomado | Golpes do Bruto que acertaram | Esquivas tardias | Fúria cheia | Itens/partida |");
         md.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|");
         foreach (var s in all)
         {
@@ -62,23 +63,23 @@ public static class Report
         md.AppendLine();
 
         md.AppendLine("## Habilidades").AppendLine();
-        md.AppendLine("| Perfil | Habilidade | Usos | No vazio | Dano | % do dano | Dano por s de recuperação | Dano desperdiçado | Abates |");
-        md.AppendLine("|---|---|---|---|---|---|---|---|---|");
+        md.AppendLine("| Perfil | Habilidade | Usos | No vazio | Dano | % do dano | Dano por uso | Abates |");
+        md.AppendLine("|---|---|---|---|---|---|---|---|");
         foreach (var s in all.Where(s => s.Persona.Chaos == 0))
             foreach (var id in s.SkillIds)
             {
                 var u = s.Skill(id);
                 md.AppendLine($"| {s.Persona.Name} | {SkillName.Of(id)} | {u.Casts} | {P(s.WhiffShare(id))} | {u.Damage} | {P(s.DamageShare(id))} | " +
-                              $"{N(s.DamagePerLockedSecond(id), "0")} | {P(s.OverkillShare(id))} | {u.Kills} |");
+                              $"{N(s.DamagePerCast(id), "0")} | {u.Kills} |");
             }
         md.AppendLine();
 
         md.AppendLine("## Itens").AppendLine();
-        md.AppendLine("| Perfil | Comum | Mágico | Raro | Lendário | Ataque do equipamento | Defesa do equipamento | Vida do equipamento |");
-        md.AppendLine("|---|---|---|---|---|---|---|---|");
+        md.AppendLine($"| Perfil | {string.Join(" | ", Rarities)} | Ataque do equipamento | Armadura do equipamento | Vida do equipamento | Níveis ganhos |");
+        md.AppendLine("|---|" + string.Concat(Enumerable.Repeat("---|", Rarities.Length + 4)));
         foreach (var s in all)
-            md.AppendLine($"| {s.Persona.Name} | {s.Drops(Rarity.Comum)} | {s.Drops(Rarity.Magico)} | {s.Drops(Rarity.Raro)} | {s.Drops(Rarity.Lendario)} | " +
-                          $"+{N(s.MeanAttackFromGear)} | +{N(s.MeanDefenseFromGear)} | +{N(s.MeanHealthFromGear)} |");
+            md.AppendLine($"| {s.Persona.Name} | {string.Join(" | ", Rarities.Select(r => s.Drops(r)))} | " +
+                          $"+{N(s.MeanAttackFromGear)} | +{N(s.MeanDefenseFromGear)} | +{N(s.MeanHealthFromGear)} | {N(s.MeanLevelUps)} |");
         md.AppendLine();
 
         md.AppendLine("## Metas usadas (PROVISÓRIO)").AppendLine();
@@ -89,7 +90,7 @@ public static class Report
         md.AppendLine($"| Pior vida do Veterano | {P(Targets.VeteranoLowestMin)}–{P(Targets.VeteranoLowestMax)} |");
         md.AppendLine($"| Tempo do Casual na cripta | {N(Targets.ClearSecondsMin, "0")}–{N(Targets.ClearSecondsMax, "0")} s |");
         md.AppendLine($"| Golpes do Bruto que acertam o Veterano | até {P(Targets.VeteranoStrikeLandedMax)} |");
-        md.AppendLine($"| Esquivas bloqueadas pela própria recuperação | até {P(Targets.DodgeLockedMax)} |");
+        md.AppendLine($"| Esquivas que chegam tarde (o golpe acerta mesmo assim) | até {P(Targets.DodgeLockedMax)} |");
         md.AppendLine($"| Tempo para derrotar um Bruto | {N(Targets.KillSecondsMin)}–{N(Targets.KillSecondsMax)} s |");
         md.AppendLine($"| Parte da Ruptura no dano do Veterano | ao menos {P(Targets.SpenderShareMin)} |");
         md.AppendLine($"| Tempo com Fúria cheia | até {P(Targets.FuryCappedMax)} |");
@@ -98,9 +99,9 @@ public static class Report
         md.AppendLine();
 
         md.AppendLine("## Limites deste teste").AppendLine();
-        md.AppendLine("- Joga só o que a slice tem: Bárbaro, um tipo de inimigo, uma cripta, três habilidades. Sistemas portados na Fase 5 entram no teste quando forem ligados ao jogo (5.8).");
+        md.AppendLine("- Joga só o que a slice tem: Bárbaro nível 6 (PROVISÓRIO), Brutos Abissais, uma cripta, três habilidades nos espaços. Outras classes entram com a 5.8d.");
         md.AppendLine("- Não avalia visual, som, leitura da tela nem diversão; mede números de jogo. Os perfis são aproximações de jogadores reais.");
-        md.AppendLine("- Os itens e graus da slice são PROVISÓRIOS (`ItemRules`, `SkillRanks`): achados sobre eles valem para a slice, não para o UMBRA final.");
+        md.AppendLine("- Regras, itens e ranks são os do UMBRA. Ficam fora o dano desperdiçado (a partida informa só a vida tirada) e o crítico e o combo na tabela de golpes por rank.");
         return md.ToString();
     }
 

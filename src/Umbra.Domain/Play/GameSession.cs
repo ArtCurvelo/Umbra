@@ -2,7 +2,6 @@ using System.Numerics;
 using Umbra.Domain.Combat;
 using Umbra.Domain.Combat.V16;
 using Umbra.Domain.Enemies;
-using InputFrame = Umbra.Domain.Gameplay.InputFrame;
 using Umbra.Domain.Heroes;
 using Umbra.Domain.Items;
 using Umbra.Domain.Skills;
@@ -37,6 +36,8 @@ public abstract record PlayEvent;
 public sealed record DamageEvent(int TargetId, int Amount, Vector2 Position, bool OnHero) : PlayEvent;
 public sealed record DeathEvent(int EnemyId, Vector2 Position) : PlayEvent;
 public sealed record WindupEvent(int EnemyId, int Ticks) : PlayEvent;
+/// <summary>An enemy's wind-up ran out and the blow was thrown (Enemy.perform_attack); Landed = it hit the hero.</summary>
+public sealed record StrikeEvent(int EnemyId, bool Landed) : PlayEvent;
 public sealed record CastEvent(string SkillId, string Anim, Vector2 Position, Vector2 Direction) : PlayEvent;
 public sealed record ItemDroppedEvent(GroundItem Item) : PlayEvent;
 public sealed record ItemTakenEvent(GroundItem Item, bool ToBag) : PlayEvent;
@@ -259,11 +260,11 @@ public sealed class GameSession
     public bool Adjacent(EnemyActor e) => Math.Max(Math.Abs(e.X - Hero.X), Math.Abs(e.Y - Hero.Y)) <= 1;
 
     // ---------------------------------------------------------------- presentation events
-    private (int Health, Dictionary<EnemyActor, (int Health, int Windup)> Enemies, int Casts, CombatResult? Last, bool Alive) Snapshot() =>
-        (Hero.Health, Enemies.ToDictionary(e => e, e => (e.Health, e.Windup), ReferenceEqualityComparer.Instance as IEqualityComparer<EnemyActor>),
+    private (int Health, Dictionary<EnemyActor, (int Health, int Windup, int Cooldown)> Enemies, int Casts, CombatResult? Last, bool Alive) Snapshot() =>
+        (Hero.Health, Enemies.ToDictionary(e => e, e => (e.Health, e.Windup, e.AttackCooldown), ReferenceEqualityComparer.Instance as IEqualityComparer<EnemyActor>),
          Hero.Skills.Casts, Hero.LastResult, Hero.Alive);
 
-    private void Report((int Health, Dictionary<EnemyActor, (int Health, int Windup)> Enemies, int Casts, CombatResult? Last, bool Alive) before)
+    private void Report((int Health, Dictionary<EnemyActor, (int Health, int Windup, int Cooldown)> Enemies, int Casts, CombatResult? Last, bool Alive) before)
     {
         foreach (var enemy in Enemies)
         {
@@ -271,6 +272,8 @@ public sealed class GameSession
             if (enemy.Health < was.Health) Events.Add(new DamageEvent(IdOf(enemy), was.Health - enemy.Health, ToWorld(enemy.Position), false));
             if (was.Health > 0 && !enemy.Alive) Events.Add(new DeathEvent(IdOf(enemy), ToWorld(enemy.Position)));
             if (was.Windup == 0 && enemy.Windup > 0) Events.Add(new WindupEvent(IdOf(enemy), enemy.Windup));
+            // perform_attack starts the attack cooldown; a stagger or death clears the wind-up without it
+            if (was.Windup > 0 && enemy.Windup == 0 && was.Cooldown <= 0 && enemy.AttackCooldown > 0) Events.Add(new StrikeEvent(IdOf(enemy), enemy.LastAttackLanded));
         }
         if (Hero.Health < before.Health) Events.Add(new DamageEvent(HeroId, before.Health - Hero.Health, HeroWorld, true));
         if (before.Alive && !Hero.Alive) Events.Add(new HeroDownEvent());

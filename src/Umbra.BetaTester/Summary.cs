@@ -1,5 +1,3 @@
-using Umbra.Domain.Gameplay;
-
 namespace Umbra.BetaTester;
 
 /// <summary>All runs of one persona, reduced to the numbers the analyst and the report use.</summary>
@@ -19,11 +17,14 @@ public sealed class Summary
     public double StrikeLandedShare => Strikes == 0 ? 0 : Runs.Sum(r => r.StrikesLanded) / (double)Strikes;
     public int DodgesWanted => Runs.Sum(r => r.DodgesStarted + r.DodgesLocked);
     public double DodgeLockedShare => DodgesWanted == 0 ? 0 : Runs.Sum(r => r.DodgesLocked) / (double)DodgesWanted;
-    public double MedianKillSeconds => Median(Runs.SelectMany(r => r.KillTicks).Select(t => t / (double)SliceData.TicksPerSecond));
+    public double MedianKillSeconds => Median(Runs.SelectMany(r => r.KillTicks).Select(t => t / (double)Facts.TicksPerSecond));
     public double FuryCappedShare => Share(r => r.FuryCappedTicks, r => r.Ticks);
     public double IdleShare => Share(r => r.IdleTicks, r => r.Ticks);
-    public double DropsPerRun => Count == 0 ? 0 : Runs.Sum(r => r.DropsByRarity.Sum()) / (double)Count;
-    public int Drops(Rarity rarity) => Runs.Sum(r => r.DropsByRarity[(int)rarity]);
+    public double DropsPerRun => Count == 0 ? 0 : Runs.Sum(r => r.DropsByRarity.Values.Sum()) / (double)Count;
+    public int Drops(string rarity) => Runs.Sum(r => r.DropsByRarity.GetValueOrDefault(rarity));
+    /// <summary>Life a landed Bruto strike took, on average (measured: armor and every rule of the real hero included).</summary>
+    public double DamagePerStrike { get { int n = Runs.Sum(r => r.StrikesLanded); return n == 0 ? 0 : Runs.Sum(r => r.DamageTaken) / (double)n; } }
+    public double MeanLevelUps => Mean(Runs.Select(r => (double)r.LevelUps));
     public double MeanAttackFromGear => Mean(Finished.Select(r => (double)r.AttackFromGear));
     public double MeanDefenseFromGear => Mean(Finished.Select(r => (double)r.DefenseFromGear));
     public double MeanHealthFromGear => Mean(Finished.Select(r => (double)r.HealthFromGear));
@@ -36,20 +37,14 @@ public sealed class Summary
         var all = new SkillUse();
         foreach (var s in Runs.Select(r => r.Skills.GetValueOrDefault(id)).OfType<SkillUse>())
         {
-            all.Casts += s.Casts; all.Whiffs += s.Whiffs; all.Hits += s.Hits; all.Damage += s.Damage; all.Overkill += s.Overkill; all.Kills += s.Kills;
+            all.Casts += s.Casts; all.Whiffs += s.Whiffs; all.Hits += s.Hits; all.Damage += s.Damage; all.Kills += s.Kills;
         }
         return all;
     }
     public double DamageShare(string id) => TotalDamage == 0 ? 0 : Skill(id).Damage / (double)TotalDamage;
     public double WhiffShare(string id) { var s = Skill(id); return s.Casts == 0 ? 0 : s.Whiffs / (double)s.Casts; }
-    public double OverkillShare(string id) { var s = Skill(id); return s.Damage + s.Overkill == 0 ? 0 : s.Overkill / (double)(s.Damage + s.Overkill); }
-
-    /// <summary>Useful damage per second of the time the skill locks the hero (recovery), from what the bot actually dealt.</summary>
-    public double DamagePerLockedSecond(string id)
-    {
-        var s = Skill(id); var def = SkillName.Def(id);
-        return s.Casts == 0 || def == null ? 0 : s.Damage / (s.Casts * def.RecoveryTicks / (double)SliceData.TicksPerSecond);
-    }
+    /// <summary>Life taken per use of the skill (whiffs included), from what the bot actually dealt.</summary>
+    public double DamagePerCast(string id) { var s = Skill(id); return s.Casts == 0 ? 0 : s.Damage / (double)s.Casts; }
 
     private double Share(Func<RunRecord, int> part, Func<RunRecord, int> whole)
     {
@@ -57,7 +52,7 @@ public sealed class Summary
         return w == 0 ? 0 : Runs.Sum(part) / w;
     }
 
-    private static int SkillOrder(string id) => id == SliceData.GolpeBrutal.Id ? 0 : id == SliceData.Ruptura.Id ? 1 : 2;
+    private static int SkillOrder(string id) => id == Facts.Golpe ? 0 : id == Facts.Ruptura ? 1 : id == Facts.Investida ? 2 : 3;
 
     public static double Mean(IEnumerable<double> values) { var v = values.ToList(); return v.Count == 0 ? 0 : v.Average(); }
     public static double Median(IEnumerable<double> values)
@@ -70,7 +65,5 @@ public sealed class Summary
 
 public static class SkillName
 {
-    public static SkillDef? Def(string id) =>
-        new[] { SliceData.GolpeBrutal, SliceData.Ruptura, SliceData.Investida }.FirstOrDefault(s => s.Id == id);
-    public static string Of(string id) => Def(id)?.Name ?? id;
+    public static string Of(string id) => Facts.Name(id);
 }

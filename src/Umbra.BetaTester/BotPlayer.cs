@@ -1,104 +1,132 @@
 using System.Numerics;
-using Umbra.Domain.Gameplay;
-using Umbra.Domain.World;
+using Umbra.Domain.Combat.V16;
+using Umbra.Domain.Play;
+using EnemyActor = Umbra.Domain.Enemies.Enemy;
 
 namespace Umbra.BetaTester;
 
 /// <summary>
-/// Plays like a person of a given <see cref="Persona"/>: it only sees what is on screen (positions, the enemy wind-up,
-/// cooldowns, Fúria) and only answers with an <see cref="InputFrame"/>, the same thing the controls send. Reaction time,
-/// aim error and habits come from the persona; randomness comes from its own seeded generator, so a run replays exactly.
+/// Plays like a person of a given <see cref="Persona"/> on UMBRA's real rules (step 5.8c): it only reads what the screen
+/// shows (positions, an enemy's wind-up and the cell it is aimed at, cooldowns, Fúria) and only answers with an
+/// <see cref="InputFrame"/>, the same thing the controls send. Reaction time, aim error and habits come from the persona;
+/// randomness comes from its own seeded generator, so a run replays exactly. Skill buttons are pressed for one tick
+/// (the game fires a skill on the press).
 /// </summary>
 public sealed class BotPlayer
 {
-    /// <summary>What a player reads from the strike animation: the enemy's reach plus the slack of the swing (tiles).</summary>
-    public const float ThreatMargin = .55f + .35f + .25f;
-
     private readonly Persona _p;
     private readonly Random _rng;
     private InputFrame _held;
     private int _nextThink;
     private int _dodgeUntil = -1;
     private Vector2 _dodgeDir;
-    private readonly HashSet<(int Enemy, int Start)> _judged = new();
+    private readonly HashSet<(EnemyActor Enemy, int Start)> _judged = new();
+    private readonly HashSet<EnemyActor> _dodging = new();
+    /// <summary>Items the hero stood on that stayed on the ground (e.g. potions at the cap): not worth walking to again.</summary>
+    public HashSet<int> Skipped { get; } = new();
 
-    /// <summary>Dodges started, and dodges the hero wanted but could not start (still recovering from its own swing).</summary>
+    /// <summary>Dodges tried, and those that came too late (the strike still landed).</summary>
     public int DodgesStarted { get; private set; }
     public int DodgesLocked { get; private set; }
 
     public BotPlayer(Persona persona, int seed) { _p = persona; _rng = new Random(seed); }
 
-    public InputFrame Next(Simulation sim)
+    /// <summary>What the bot learns after a tick: whether a strike it tried to dodge landed anyway.</summary>
+    public void Observe(GameSession s)
     {
-        var hero = sim.Hero;
-        if (sim.Tick < _dodgeUntil) return new InputFrame(_dodgeDir, null, hero.Position + _dodgeDir, false, false, false);
-        if (Threat(sim) is { } threat) return threat;
-        if (sim.Tick < _nextThink) return _held;
-        _nextThink = sim.Tick + _p.ThinkTicks;
-        _held = _rng.NextDouble() < _p.Chaos ? Random(hero) : Decide(sim);
+        foreach (var e in s.Events.OfType<StrikeEvent>())
+        {
+            var enemy = s.EnemyById(e.EnemyId);
+            if (enemy != null && _dodging.Remove(enemy) && e.Landed) DodgesLocked++;
+        }
+        foreach (var item in s.Items) if (item.Cell == s.Hero.Position) Skipped.Add(item.Id);
+    }
+
+    public InputFrame Next(GameSession s)
+    {
+        var here = s.HeroWorld;
+        if (s.Tick < _dodgeUntil) return new InputFrame(_dodgeDir, null, here + _dodgeDir, false, false, false);
+        if (Threat(s) is { } threat) return threat;
+        if (s.Tick < _nextThink) return _held with { Skill1 = false, Skill2 = false };
+        _nextThink = s.Tick + _p.ThinkTicks;
+        _held = _rng.NextDouble() < _p.Chaos ? Random(here) : Decide(s);
         return _held;
     }
 
-    /// <summary>Steps out of a telegraphed strike once the persona has had time to react.</summary>
-    private InputFrame? Threat(Simulation sim)
+    /// <summary>Steps off the cell a wound-up enemy is aimed at, once the persona has had time to react
+    /// (Enemy.perform_attack only hits if the hero still stands on the marked cell).</summary>
+    private InputFrame? Threat(GameSession s)
     {
         if (_p.DodgeChance <= 0) return null;
-        var hero = sim.Hero;
-        foreach (var enemy in sim.Enemies)
+        var hero = s.Hero; var here = s.HeroWorld;
+        foreach (var enemy in s.Enemies)
         {
-            if (!enemy.Alive || enemy.State != AiState.Windup) continue;
-            int elapsed = SliceData.BruteWindupTicks - enemy.StateTicks;
-            int start = sim.Tick - elapsed;
-            if (elapsed < _p.ReactionTicks || !_judged.Add((enemy.Id, start))) continue;
-            float reach = enemy.Radius + hero.Radius + ThreatMargin;
-            var away = hero.Position - enemy.Position;
-            if (away.Length() > reach || _rng.NextDouble() >= _p.DodgeChance) continue;
-            // Like a person: let go of the attack and push away. The step starts as soon as the hero's own recovery ends;
-            // it counts as locked when that recovery outlasts the wind-up (the strike lands before the hero can move).
-            int busy = Math.Max(hero.Recovery, hero.DashTicks);
-            if (busy >= enemy.StateTicks) DodgesLocked++; else DodgesStarted++;
-            var dir = away.LengthSquared() > 1e-4f ? Vector2.Normalize(away) : -hero.Facing;
-            // Back away, bending toward the side with room (a wall behind would cancel the step).
+            if (!enemy.Alive || enemy.Windup <= 0 || enemy.AttackTarget != hero.Position) continue;
+            int elapsed = enemy.WindupDuration - enemy.Windup;
+            int start = s.Tick - elapsed;
+            if (elapsed < _p.ReactionTicks || !_judged.Add((enemy, start))) continue;
+            if (_rng.NextDouble() >= _p.DodgeChance) continue;
+            DodgesStarted++; _dodging.Add(enemy);
+            var away = here - GameSession.ToWorld(enemy.Position);
+            var dir = away.LengthSquared() > 1e-4f ? Vector2.Normalize(away) : -s.Facing;
+            // Back away, bending toward the side with room (a wall behind keeps the hero on the marked cell).
             var side = new Vector2(-dir.Y, dir.X) * (_rng.Next(2) == 0 ? 1 : -1);
-            _dodgeDir = Vector2.Normalize(Open(sim, hero.Position, dir) ? dir + side * .4f : side);
-            _dodgeUntil = sim.Tick + enemy.StateTicks + 2;
-            return new InputFrame(_dodgeDir, null, hero.Position + _dodgeDir, false, false, false);
+            _dodgeDir = Vector2.Normalize(Open(s, here, dir) ? dir + side * .4f : Open(s, here, side) ? side : -side);
+            _dodgeUntil = s.Tick + enemy.Windup + 2;
+            return new InputFrame(_dodgeDir, null, here + _dodgeDir, false, false, false);
         }
         return null;
     }
 
-    private static bool Open(Simulation sim, Vector2 from, Vector2 dir) => !Collision.Blocked(sim.Map, from + dir * 1.2f, sim.Hero.Radius);
-
-    private InputFrame Decide(Simulation sim)
+    private static bool Open(GameSession s, Vector2 from, Vector2 dir)
     {
-        var hero = sim.Hero;
-        var target = sim.Enemies.Where(e => e.Alive).OrderBy(e => Vector2.Distance(e.Position, hero.Position)).FirstOrDefault();
-        if (target == null)
-        {
-            var drop = sim.Drops.OrderBy(d => Vector2.Distance(d.Position, hero.Position)).FirstOrDefault();
-            return drop == null || sim.BagFull ? InputFrame.None(hero.Position + hero.Facing)
-                                               : new InputFrame(Vector2.Zero, drop.Position, drop.Position, false, false, false);
-        }
-        var toward = Rotate(Vector2.Normalize(target.Position - hero.Position), (float)(_rng.NextDouble() * 2 - 1) * _p.AimErrorDegrees);
-        var aim = hero.Position + toward * Vector2.Distance(hero.Position, target.Position);
-        float distance = Vector2.Distance(hero.Position, target.Position);
-        if (sim.InArc(target, toward, SliceData.GolpeBrutal.Range, SliceData.GolpeBrutal.ArcDegrees))
-        {
-            int group = sim.Enemies.Count(e => e.Alive && sim.InArc(e, toward, SliceData.Ruptura.Range, SliceData.Ruptura.ArcDegrees));
-            bool cone = _p.ConeGroup > 0 && hero.Fury >= SliceData.Ruptura.Cost && group >= _p.ConeGroup;
-            return new InputFrame(Vector2.Zero, null, aim, !cone, cone, false);
-        }
-        bool dash = _p.UsesDash && hero.Cooldown(SliceData.Investida.Id) == 0 && distance is > 2.5f and < 4.5f
-                    && Collision.LineOfSight(sim.Map, hero.Position, target.Position);
-        var walk = Vector2.Normalize(target.Position - hero.Position);
-        return new InputFrame(dash ? Vector2.Zero : walk, null, aim, false, false, dash);
+        var (x, y) = GameSession.ToCell(from + dir * 1.1f);
+        return s.Grid.Cell(x, y) == 0 && s.Hero.CanEnter(x, y, s.Grid);
     }
 
-    private InputFrame Random(Hero hero)
+    private static int Steps(EnemyActor e, (int X, int Y) at) => Math.Max(Math.Abs(e.X - at.X), Math.Abs(e.Y - at.Y));
+
+    private InputFrame Decide(GameSession s)
+    {
+        var hero = s.Hero; var here = s.HeroWorld;
+        var target = s.Enemies.Where(e => e.Alive).OrderBy(e => Vector2.Distance(GameSession.ToWorld(e.Position), here)).FirstOrDefault();
+        if (target == null)
+        {
+            var item = s.Items.Where(i => !Skipped.Contains(i.Id)).OrderBy(i => Vector2.Distance(GameSession.ToWorld(i.Cell), here)).FirstOrDefault();
+            if (item == null) return InputFrame.None(here + s.Facing);
+            var to = GameSession.ToWorld(item.Cell) - here;
+            return new InputFrame(to.LengthSquared() > 1e-4f ? Vector2.Normalize(to) : Vector2.Zero, null, here, false, false, false);
+        }
+        var at = GameSession.ToWorld(target.Position);
+        float distance = Vector2.Distance(here, at);
+        var toward = Rotate(Vector2.Normalize(at - here + new Vector2(1e-4f, 0)), (float)(_rng.NextDouble() * 2 - 1) * _p.AimErrorDegrees);
+        var aim = here + toward * distance;
+        if (s.Adjacent(target))
+        {
+            var cone = s.Slot(1);
+            int group = s.Enemies.Count(e => e.Alive && InCone(hero.Position, e, toward, s.RangeOf(Facts.Ruptura)));
+            bool spend = _p.ConeGroup > 0 && cone != null && hero.Resource >= cone.Num("cost", 0)
+                         && hero.Skills.Cooldowns.GetValueOrDefault(Facts.Ruptura) == 0 && group >= _p.ConeGroup;
+            return new InputFrame(Vector2.Zero, null, aim, !spend, spend, false);
+        }
+        bool dash = _p.UsesDash && hero.Skills.Cooldowns.GetValueOrDefault(Facts.Investida) == 0 && Steps(target, hero.Position) is >= 2 and <= 4
+                    && Geo.LineOfSight(s.Grid, hero.Position, target.Position);
+        return new InputFrame(dash ? Vector2.Zero : Vector2.Normalize(at - here), null, aim, false, false, dash);
+    }
+
+    /// <summary>The bot's eye for Ruptura's cone: within reach (tiles) and 45° of the aim.</summary>
+    private static bool InCone((int X, int Y) from, EnemyActor e, Vector2 dir, double range)
+    {
+        var to = new Vector2(e.X - from.X, e.Y - from.Y);
+        if (to.LengthSquared() < 1e-4f || Steps(e, from) > range) return false;
+        return Vector2.Dot(Vector2.Normalize(to), dir) >= MathF.Cos(MathF.PI / 4) - 1e-4f;
+    }
+
+    private InputFrame Random(Vector2 here)
     {
         float angle = (float)(_rng.NextDouble() * Math.PI * 2);
         var dir = new Vector2(MathF.Cos(angle), MathF.Sin(angle));
-        return new InputFrame(_rng.Next(3) == 0 ? Vector2.Zero : dir, null, hero.Position + dir * 2,
+        return new InputFrame(_rng.Next(3) == 0 ? Vector2.Zero : dir, null, here + dir * 2,
                               _rng.Next(3) == 0, _rng.Next(4) == 0, _rng.Next(6) == 0);
     }
 

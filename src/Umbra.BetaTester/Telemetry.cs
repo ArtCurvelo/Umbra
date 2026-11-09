@@ -1,5 +1,3 @@
-using Umbra.Domain.Gameplay;
-
 namespace Umbra.BetaTester;
 
 public enum Outcome { Cleared, Died, Timeout, Stuck, Crashed }
@@ -8,14 +6,13 @@ public enum Outcome { Cleared, Died, Timeout, Stuck, Crashed }
 public sealed class SkillUse
 {
     public int Casts { get; set; }
-    public int Whiffs { get; set; }       // casts that hit nothing
+    public int Whiffs { get; set; }       // casts that hit nothing within their window
     public int Hits { get; set; }
-    public int Damage { get; set; }
-    public int Overkill { get; set; }     // damage past the enemy's remaining life
+    public int Damage { get; set; }       // life actually taken from enemies
     public int Kills { get; set; }
 }
 
-/// <summary>Everything measured in one run: what the report reads. Ticks are simulation ticks (60 per second).</summary>
+/// <summary>Everything measured in one run: what the report reads. Ticks are game ticks (60 per second).</summary>
 public sealed class RunRecord
 {
     public required string Persona { get; init; }
@@ -23,9 +20,10 @@ public sealed class RunRecord
     public Outcome Outcome { get; set; }
     public string? Error { get; set; }
     public int Ticks { get; set; }
-    public double Seconds => Ticks / (double)SliceData.TicksPerSecond;
+    public double Seconds => Ticks / (double)Facts.TicksPerSecond;
     public int Enemies { get; set; }
     public int Kills { get; set; }
+    public int LevelUps { get; set; }
 
     public int DamageTaken { get; set; }
     public int MaxHealth { get; set; }
@@ -42,8 +40,8 @@ public sealed class RunRecord
     public int IdleTicks { get; set; }                    // alive enemies, no input, nothing happening
     public int LongestStuckTicks { get; set; }
 
-    public int[] DropsByRarity { get; } = new int[4];
-    public int PickedUp { get; set; }
+    public Dictionary<string, int> DropsByRarity { get; } = new();   // equipment drops by UMBRA rarity name
+    public int PickedUp { get; set; }                     // equipment taken into the bag
     public int BagFullTicks { get; set; }
     public int Equipped { get; set; }
     public int AttackFromGear { get; set; }
