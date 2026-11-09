@@ -111,7 +111,7 @@ public sealed class Bench
             ["detalhe_lentos"] = _slowDetail,
             ["eventos_em_todos"] = _allTags,
             ["lutas_recomecadas"] = Restarts,
-            ["inimigos_restantes_no_fim"] = _main.Sim.EnemiesRemaining,
+            ["inimigos_restantes_no_fim"] = _main.Session.EnemiesRemaining,
         };
         System.IO.File.WriteAllText(path, JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
         GD.Print($"benchmark: {path} — {report["preset"]}: {report["fps_medio"]} FPS médio, 1% baixo {report["fps_1pct_baixo"]}");

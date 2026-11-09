@@ -22,6 +22,18 @@ public static class Materials
         _ => Rgb(255, 128, 32),
     };
 
+    /// <summary>Colour of an item record: the rarity's (UMBRA names) for equipment, the record's own colour otherwise.</summary>
+    public static Color RarityOf(Umbra.Domain.Skills.PyDict record)
+    {
+        if (Umbra.Domain.Play.ItemView.Equipment(record) || record.Get("color") is not List<object?> { Count: >= 3 } rgb)
+            return Umbra.Domain.Play.ItemView.Rarity(record) switch
+            {
+                "Mágico" => Rgb(70, 140, 255), "Raro" => Rgb(250, 222, 70), "Lendário" => Rgb(255, 128, 32),
+                "Único" => Rgb(176, 112, 56), "Único Mítico" => Rgb(170, 80, 240), _ => Rgb(196, 196, 200),
+            };
+        return Rgb((int)Umbra.Domain.Skills.Py.Num(rgb[0]), (int)Umbra.Domain.Skills.Py.Num(rgb[1]), (int)Umbra.Domain.Skills.Py.Num(rgb[2]));
+    }
+
     public static Color Rgb(int r, int g, int b, float a = 1f) => new(r / 255f, g / 255f, b / 255f, a);
 
     private static NoiseTexture2D Gray(int seed, FastNoiseLite.NoiseTypeEnum type, float frequency, FastNoiseLite.CellularReturnTypeEnum cellular,

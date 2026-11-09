@@ -1,5 +1,7 @@
 using Godot;
 using Umbra.Domain.Gameplay;
+using Umbra.Domain.Play;
+using Umbra.Domain.Skills;
 
 namespace Umbra.Game.Ui;
 
@@ -133,6 +135,48 @@ public static class Parts
     }
 
     public static float TooltipHeight(Item item, int compareLines) => 62 + 34 + item.Affixes.Count * 28 + (compareLines > 0 ? 34 + compareLines * 26 : 0) + 14;
+
+    // ------------------------------------------------------------------ UMBRA item records (step 5.8c)
+    public static void ItemSlot(Control c, Rect2 r, PyDict? record, string? label, bool focus)
+    {
+        c.DrawRect(r, Materials.Rgb(14, 12, 16));
+        var color = record != null ? Materials.RarityOf(record) : Materials.Iron;
+        c.DrawRect(r, color, false, record != null ? 2 : 1);
+        if (record != null) UiKit.TextIn(c, ItemView.Kind(record), r, 11, color);
+        else if (label != null) UiKit.TextIn(c, label, r, 11, Faint);
+        if (focus) c.DrawRect(r.Grow(3), Materials.Gold, false, 2);
+    }
+
+    /// <summary>Tooltip of a record: name in its rarity colour with the tag, rarity and type, stats, affixes, level and
+    /// durability, and the comparison with the equipped item in colour AND words ("melhor"/"pior").</summary>
+    public static void Tooltip(Control c, Rect2 r, PyDict record, string type, IReadOnlyList<(string Text, bool Better)>? compare)
+    {
+        var color = Materials.RarityOf(record);
+        c.DrawRect(r, Materials.Rgb(10, 9, 12, .96f));
+        c.DrawRect(r, color, false, 2);
+        c.DrawRect(new Rect2(r.Position, new Vector2(r.Size.X, 52)), new Color(color, .14f));
+        UiKit.TextIn(c, $"[{ItemView.Tag(record)}] {ItemView.Name(record)}", new Rect2(r.Position + new Vector2(0, 2), new Vector2(r.Size.X, 30)), 22, color, HorizontalAlignment.Left, 12);
+        UiKit.TextIn(c, ItemView.Rarity(record) + "  —  " + type, new Rect2(r.Position + new Vector2(0, 30), new Vector2(r.Size.X, 18)), 11, Materials.Ash, HorizontalAlignment.Left, 12);
+        float y = r.Position.Y + 62;
+        foreach (var line in ItemView.StatLines(record)) { UiKit.TextIn(c, line, new Rect2(r.Position.X, y, r.Size.X, 30), 22, Materials.Bone, HorizontalAlignment.Left, 12); y += 30; }
+        foreach (var line in ItemView.AffixLines(record)) { UiKit.TextIn(c, line, new Rect2(r.Position.X, y, r.Size.X, 28), 22, Materials.Rgb(140, 170, 230), HorizontalAlignment.Left, 12); y += 28; }
+        UiKit.TextIn(c, ItemView.Footer(record), new Rect2(r.Position.X, y + 2, r.Size.X, 18), 11, Faint, HorizontalAlignment.Left, 12); y += 22;
+        if (compare == null || compare.Count == 0) return;
+        y += 8;
+        c.DrawRect(new Rect2(r.Position.X + 12, y, r.Size.X - 24, 1), Materials.Iron);
+        UiKit.Text(c, "COMPARADO AO EQUIPADO", new Vector2(r.Position.X + 12, y + 18), 11, Materials.Ash); y += 26;
+        foreach (var (text, better) in compare)
+        {
+            var row = new Rect2(r.Position.X, y, r.Size.X, 26);
+            UiKit.TextIn(c, text, row, 22, better ? Good : Bad, HorizontalAlignment.Left, 12);
+            UiKit.TextIn(c, better ? "melhor" : "pior", row, 11, Materials.Ash, HorizontalAlignment.Right, 12);
+            y += 26;
+        }
+    }
+
+    public static float TooltipHeight(PyDict record, int compareLines) =>
+        62 + ItemView.StatLines(record).Count * 30 + ItemView.AffixLines(record).Count * 28 + 22
+        + (compareLines > 0 ? 34 + compareLines * 26 : 0) + 14;
 }
 
 /// <summary>Display text of item stats (PROVISIONAL numbers live in Umbra.Domain.Gameplay.ItemRules).</summary>

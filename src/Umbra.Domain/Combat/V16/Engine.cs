@@ -250,7 +250,7 @@ public static class SkillEngine
         var outcome = Shapes.Run(ctx, Commit);
         if (outcome == null) return false;
         if (outcome == Outcome.Off) return true;                          // aura switched off: free, no cooldown
-        if (outcome == Outcome.Free) { player.Skills.LastSkillId = spec.Str("id"); return true; }
+        if (outcome == Outcome.Free) { player.Skills.LastSkillId = spec.Str("id"); player.Skills.Casts++; return true; }
         if (outcome == Outcome.Fail || !paid) return false;
         Riders.Run(ctx, "after");
         StartCooldown(player, spec);
@@ -259,7 +259,7 @@ public static class SkillEngine
         h.WarlockOnCast(ctx);
         h.NecroAfterCast(ctx);
         var s = player.Skills;
-        s.LastSkillId = spec.Str("id"); s.LastSkillAnim = spec.Str("anim", spec.Str("id"));
+        s.LastSkillId = spec.Str("id"); s.LastSkillAnim = spec.Str("anim", spec.Str("id")); s.Casts++;
         var targets = ctx.State.Targets;
         s.TargetPositions.Clear();
         if (targets.Count > 0) s.TargetPositions.AddRange(targets.Select(e => ((int, int)?)e.Position));

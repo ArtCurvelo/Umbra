@@ -51,7 +51,7 @@ Regras do documento de direção:
 | 5.7 | Inimigos e chefes: criação por andar, IA (percepção, perseguição, memória, recuo, ataque com preparação), estados, elites, dormência, os 8 chefes (fases, 12 habilidades, armadura óssea, zonas) | **Feito, com paridade** (2026-11-08) |
 | 5.8a | Núcleo do herói (todas as classes): atributos com equipamento, nível e experiência, recurso, dano recebido, poções, movimento, investida, passo por tick, coletas | **Feito, com paridade** (2026-11-09) |
 | 5.8b | Ataque básico com preparação (resolver) e habilidades usadas pelos espaços | **Feito, com paridade** (2026-11-09) |
-| 5.8c | A slice com o Bárbaro real (graus, itens e inimigos reais no lugar dos PROVISÓRIOS) | Próximo |
+| 5.8c | A slice com o Bárbaro real (graus, itens e inimigos reais no lugar dos PROVISÓRIOS) | **Feito** (2026-11-09), telas aguardando aprovação |
 | 5.8d | Classes uma a uma nas suas regras próprias (Bruxo e Necromante por último, com 5.4b: invocações, cadáveres, Jaula, Grimório) | Pendente |
 | 5.9 | Mundo: as 6 regiões, cidades, teleportes, masmorras por família, dificuldade | Pendente |
 | 5.10 | Saves: conversor dos `slot_N.json` (versões 1, 2 e 3 e seções) para o formato novo, sem tocar nos originais | Pendente |
@@ -397,3 +397,37 @@ Regras do documento de direção:
   | alvo pelo passo antes da distância | 1 |
 
 - **Mutação sem efeito possível (registrada):** o atordoamento de 4 quadros do caminho antigo. O próprio dano do inimigo já aplica 4 quadros em inimigos comuns; só faria diferença em chefes.
+
+## Entrega 5.8c (2026-11-09) — aguardando aprovação do Game Director
+- **A slice joga com o Bárbaro real.** Saíram da partida os graus, os itens e o inimigo PROVISÓRIOS da Fase 2. A `Simulation` antiga continua no repositório só para o BetaTester, até ele mudar para a sessão nova.
+- **`src/Umbra.Domain/Play/GameSession.cs`:** a partida no laço do motor do UMBRA.
+  - **Início:** herói real (`Hero`), Brutos Abissais reais (`EnemyActor`, IA da 5.7) e o mapa da cripta.
+  - **Ordem de cada tick:** entrada, locomoção, coleta ao mudar de casa, `hero.Update`, inimigos (os dormentes não rodam), mortes, estados, recursos, orbes e mundo das habilidades.
+  - **Mortes (`process_enemy_deaths`):** XP real, Fúria +5, orbe de recurso 55%, quedas 5/15/9/8/6% (poção, ouro, arma, armadura, acessório).
+  - **Eventos de apresentação:** dano, morte, preparação, conjuração, item no chão, item recolhido, nível, herói caído.
+  - **`Discard`:** largar um item da mochila no chão. É ação só da slice: o UMBRA vende ou recicla.
+- **`src/Umbra.Domain/Heroes/Locomotion.cs`:** movimento contínuo dentro da casa (`world/locomotion.py`: velocidade 4,8, raio 0,21, zona morta 0,22, deslize nas paredes). Paridade: 63/63 casos (`tools/parity/motion_parity.py`).
+- **Godot:**
+  - **Partida, HUD e atores (`Main`, `Hud`, `ActorLayer`):** leem a sessão por id.
+  - **Personagem:** os 12 espaços reais do Bárbaro (capacete, peitoral, luvas, calça, botas, amuleto, 2 anéis, concussão, corte, 2 rápidas), mochila de 30 e dicas com atributos, afixos, nível, iLvl e durabilidade. Equipar e guardar passam por `Gear.FromInventory`/`Gear.Unequip`.
+  - **Árvore:** a árvore real.
+    - Ranks 1–15; nós bloqueados mostram o nível exigido.
+    - Dano atual e do próximo rank pelo multiplicador resolvido (`Tuning.Resolve`).
+    - As 7 opções de cada habilidade, compráveis e devolvíveis por `TreeRules.Learn/Refund`.
+    - Y/R equipa a habilidade em foco.
+    - As tabelas do UMBRA (`game/data/umbra`) são lidas no início do jogo.
+- **Testes:**
+  - xUnit 1 304/1 304, dos quais 6 da sessão: determinismo, laço completo em 3 sementes, Brutos ferem herói parado;
+  - autoteste do Godot 36/36: luta, personagem com item real, árvore real com compra e devolução de rank, configurações, menu;
+  - `tools/check.ps1` aprovado.
+- **Telas para aprovação:** `docs/fase5/telas_58c/` (`combate.png`, `inventario.png`, `arvore.png`). O layout é o das maquetes aprovadas na Fase 4; mudaram o conteúdo, os 12 espaços do boneco e as opções em leque.
+- **Para o Game Director:**
+  - **Travamento por golpes (regra real do UMBRA):**
+    - **A regra:** todo acerto num inimigo comum cancela a preparação dele e o atordoa 4 quadros.
+    - **O efeito:** um Bárbaro que não para de golpear (golpes a cada ~14 quadros) quase nunca é atingido por um Bruto (preparação de 35 quadros).
+    - **Na prática:** no autoteste a cripta caiu em 9 s com o herói de vida cheia.
+    - **Decisão do Game Director:** se a slice deve ter outro desafio (mais inimigos, nível inicial menor, dificuldade).
+  - **Nível inicial 6 (PROVISÓRIO):** escolhido para a Ruptura (nível 3) e a Investida estarem disponíveis. O herói começa com 3 pontos livres.
+  - **Rótulo cortado:** o rótulo do UMBRA "CONCUSSÃO" não cabe no espaço de 52 px.
+  - **Passivas de classe (`class:*`) fora da árvore:** ainda não aparecem na tela e esperam uma maquete.
+- **Risco:** as tabelas são lidas do disco (`res://data/umbra` globalizado). Um executável exportado precisa levar a pasta junto (Fase 6, empacotamento).

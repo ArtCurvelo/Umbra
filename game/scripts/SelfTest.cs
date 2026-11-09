@@ -1,5 +1,7 @@
 using Godot;
-using Umbra.Domain.Gameplay;
+using Umbra.Domain.Items;
+using Umbra.Domain.Play;
+using Umbra.Domain.Util;
 using Umbra.Game.Ui;
 
 namespace Umbra.Game;
@@ -45,19 +47,19 @@ public sealed class SelfTest
     public void Frame()
     {
         _frame++;
-        var sim = _main.Sim;
+        var sim = _main.Session;
         switch (_phase)
         {
             case 0:                                         // fight: autopilot, one tick per frame, real views
-                if (_main.Screens.Count == 0) _main.StepOnce(Autopilot.Next(sim));
+                if (_main.Screens.Count == 0) _main.StepOnce(SessionPilot.Next(sim));
                 _main.Present(1f, 1 / 60.0);
-                bool over = (sim.Cleared && sim.Drops.Count == 0) || !sim.Hero.Alive || sim.Tick > 120 * 60;
+                bool over = (sim.Cleared && sim.Items.Count == 0) || !sim.Hero.Alive || sim.Tick > 120 * 60;
                 if (over && _settle < 3) { _settle++; break; }
                 if (over)
                 {
                     Check(sim.Hero.Alive, $"herói vivo ao fim (vida {sim.Hero.Health}/{sim.Hero.MaxHealth})");
                     Check(sim.Cleared, $"cripta limpa ({sim.EnemiesRemaining} restantes, {sim.Tick} ticks = {sim.Tick / 60f:0.0} s)");
-                    Check(sim.Inventory.Count > 0, $"itens recolhidos: {string.Join(", ", sim.Inventory.Select(i => $"[{i.Tag}] {i.Name}"))}");
+                    Check(sim.Items.Count == 0, $"nada ficou no chão; mochila: {string.Join(", ", sim.Hero.Inventory.Items.Select(i => $"[{ItemView.Tag(i)}] {ItemView.Name(i)}"))}; ouro {sim.Hero.Gold}");
                     Check(_main.Hud.ObjectiveText == "Cripta limpa.", $"HUD mostra o objetivo cumprido (\"{_main.Hud.ObjectiveText}\")");
                     Check(_main.Hud.Banner == "clear", "faixa CRIPTA LIMPA");
                     Check(!Settings.Persistent, "execução de ferramenta não lê nem grava as configurações do jogador");
@@ -99,8 +101,9 @@ public sealed class SelfTest
 
     private void Enqueue()
     {
-        var hero = _main.Sim.Hero;
-        int attackBefore = 0, defenseBefore = 0, healthBefore = 0, bagBefore = 0;
+        var hero = _main.Session.Hero;
+        int attackBefore = 0, defenseBefore = 0, healthBefore = 0, bagBefore = 0, pointsBefore = 0;
+        const string ruptura = "learn:barb2_ruptura";
         string presetBefore = "";
         // pause
         _script.Enqueue(() => Press(JoyButton.Start));
@@ -110,27 +113,31 @@ public sealed class SelfTest
         _script.Enqueue(() =>
         {
             Check(Top is CharacterScreen, "A abre a tela de personagem");
-            attackBefore = hero.Attack; defenseBefore = hero.Defense; healthBefore = hero.MaxHealth; bagBefore = _main.Sim.Inventory.Count;
+            // a known weapon in the first bag cell (the fight's drops are random)
+            hero.Inventory.Items.Insert(0, Loot.Drop("weapon", 1, hero.Level, hero.PlayerClass, new PyRandom(5)));
+            attackBefore = hero.Attack; defenseBefore = hero.Defense; healthBefore = hero.MaxHealth; bagBefore = hero.Inventory.Items.Count;
             Press(JoyButton.A);
         });
         _script.Enqueue(() =>
         {
             bool changed = hero.Attack != attackBefore || hero.Defense != defenseBefore || hero.MaxHealth != healthBefore;
-            Check(hero.Equipment.All.Any() && changed, $"A equipa o item e muda os atributos (ataque {attackBefore}->{hero.Attack}, defesa {defenseBefore}->{hero.Defense}, vida {healthBefore}->{hero.MaxHealth})");
-            Check(_main.Sim.Inventory.Count == bagBefore - 1, "o item sai da mochila");
+            Check(Gear.Records(hero).Count > 0 && changed, $"A equipa o item e muda os atributos (ataque {attackBefore}->{hero.Attack}, defesa {defenseBefore}->{hero.Defense}, vida {healthBefore}->{hero.MaxHealth})");
+            Check(hero.Inventory.Items.Count == bagBefore - 1, "o item sai da mochila");
             Press(JoyButton.B);
         });
         _script.Enqueue(() => { Check(_main.Screens.Count == 0 && !_main.GetTree().Paused, "B fecha a tela e o mundo volta"); Press(JoyButton.RightStick); });
         // skill tree
         _script.Enqueue(() =>
         {
-            Check(Top is TreeScreen t && t.FocusedId == SliceData.Ruptura.Id, "R3 abre a árvore com foco na Ruptura");
+            Check(Top is TreeScreen t && t.FocusedId == "barb2_ruptura", "R3 abre a árvore com foco na Ruptura");
+            pointsBefore = hero.Tree.Points;
+            Check(pointsBefore > 0, $"o herói tem pontos para gastar ({pointsBefore})");
             Press(JoyButton.A);
         });
-        _script.Enqueue(() => { Check(hero.Ranks.Rank(SliceData.Ruptura.Id) == 2 && hero.Ranks.Points == SkillRanks.StartingPoints - 1, "A aprende um grau (ponto gasto)"); Press(JoyButton.X); });
-        _script.Enqueue(() => { Check(hero.Ranks.Rank(SliceData.Ruptura.Id) == 1 && hero.Ranks.Points == SkillRanks.StartingPoints, "X devolve o ponto"); Press(JoyButton.RightShoulder); });
+        _script.Enqueue(() => { Check(hero.Tree.Rank(ruptura) == 2 && hero.Tree.Points == pointsBefore - 1, $"A sobe a Ruptura para o rank 2 (rank {hero.Tree.Rank(ruptura)}, pontos {hero.Tree.Points})"); Press(JoyButton.X); });
+        _script.Enqueue(() => { Check(hero.Tree.Rank(ruptura) == 1 && hero.Tree.Points == pointsBefore, "X devolve o ponto"); Press(JoyButton.RightShoulder); });
         _script.Enqueue(() => { Check(Top is TreeScreen t && t.Zoom > 1f, "RB aproxima a árvore"); Press(JoyButton.DpadUp); });
-        _script.Enqueue(() => { Check(Top is TreeScreen t && t.FocusedId != SliceData.Ruptura.Id, $"direcional muda o nó em foco ({(Top as TreeScreen)?.FocusedId})"); Press(JoyButton.B); });
+        _script.Enqueue(() => { Check(Top is TreeScreen t && t.FocusedId != "barb2_ruptura", $"direcional muda o nó em foco ({(Top as TreeScreen)?.FocusedId})"); Press(JoyButton.B); });
         // settings: quality, remap with a conflict, restore
         _script.Enqueue(() => Press(JoyButton.Start));
         _script.Enqueue(() => Press(JoyButton.DpadDown));
@@ -172,8 +179,8 @@ public sealed class SelfTest
         _script.Enqueue(() => Press(JoyButton.A));
         _script.Enqueue(() =>
         {
-            var s = _main.Sim;
-            Check(_main.Screens.Count == 0 && s.EnemiesRemaining == s.Enemies.Count && s.Inventory.Count == 0, "Novo jogo começa uma cripta nova");
+            var s = _main.Session;
+            Check(_main.Screens.Count == 0 && s.EnemiesRemaining == s.Enemies.Count && s.Hero.Inventory.Items.Count == 0 && s.Tick == 0, "Novo jogo começa uma cripta nova");
         });
     }
 

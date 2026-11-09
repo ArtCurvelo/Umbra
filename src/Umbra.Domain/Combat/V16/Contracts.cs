@@ -61,6 +61,8 @@ public sealed class SkillState
     public int LastDash;
     public double WardGain;
     public string? LastSkillId, LastSkillAnim;
+    /// <summary>Successful casts so far (presentation: a new cast of the same skill is still a new cast).</summary>
+    public int Casts;
     public List<(int X, int Y)?> TargetPositions { get; } = new();
     public (int X, int Y)? Direction;
     // class passives (skills/v16/passives.py): temporary bonuses and their counters

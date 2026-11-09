@@ -1,18 +1,23 @@
 using Godot;
 using Umbra.Domain.Gameplay;
+using Umbra.Domain.Heroes;
+using Umbra.Domain.Items;
+using Umbra.Domain.Play;
 using Umbra.Game.Ui;
 using NVec = System.Numerics.Vector2;
 
 namespace Umbra.Game;
 
 /// <summary>
-/// Vertical slice entry point. The simulation (Umbra.Domain) runs at a fixed 60 ticks per second; this node turns
-/// devices into InputFrames, steps the simulation, hands its events to the views and draws an interpolated frame.
+/// Vertical slice entry point. The game session (Umbra.Domain.Play: UMBRA's real rules since step 5.8c) runs at a fixed
+/// 60 ticks per second; this node turns devices into InputFrames, steps it, hands its events to the views and draws an
+/// interpolated frame.
 /// </summary>
 public partial class Main : Node3D
 {
     public LaunchOptions Options { get; private set; } = new();
-    public Simulation Sim { get; private set; } = null!;
+    public GameSession Session { get; private set; } = null!;
+    public const float TickSeconds = 1f / 60f;
     public WorldView World { get; private set; } = null!;
     public ActorLayer Actors { get; } = new();
     public CameraRig Rig { get; } = new();
@@ -55,6 +60,7 @@ public partial class Main : Node3D
         Rig.SetMode(ToolRun ? Options.Camera == "top" : Settings.Current.StartCamera == "top");
         Rig.SetYawStep(Options.Yaw);
         Rig.SetZoom(Options.Zoom ?? (ToolRun ? 30 : Settings.Current.Zoom));
+        LoadTables();
         StartRun(Options.Seed);
         Settings.Current.ApplySystem(this);
         if (Options.Screen != null) OpenForShot(Options.Screen);
@@ -72,29 +78,43 @@ public partial class Main : Node3D
         }
     }
 
+    private static bool _tablesLoaded;
+
+    /// <summary>UMBRA's exported tables (game/data/umbra: heroes, trees, equipment, foes). Read from disk through the
+    /// globalized path: fine in the editor and in tool runs; an exported build must ship the folder next to the
+    /// executable (open point for the Phase 6 packaging).</summary>
+    private static void LoadTables()
+    {
+        if (_tablesLoaded) return;
+        string root = ProjectSettings.GlobalizePath("res://data/umbra");
+        HeroTables.Load(root);
+        Umbra.Domain.Enemies.FoeTables.Load(root);
+        _tablesLoaded = true;
+    }
+
     public void StartRun(ulong seed)
     {
         World?.QueueFree();
-        Sim = new Simulation(seed);
-        for (int i = 0; i < Options.FastForward; i++) Sim.Step(Autopilot.Next(Sim));
+        Session = new GameSession(seed);
+        for (int i = 0; i < Options.FastForward; i++) Session.Step(SessionPilot.Next(Session));
         World = new WorldView { Name = "Cripta" };
         AddChild(World);
-        World.Build(Sim.Map, Preset, Options.Seed);
-        Actors.Build(Sim);
-        Hud.Bind(Sim, Rig, Actors);
+        World.Build(Session.Map, Preset, Options.Seed);
+        Actors.Build(Session);
+        Hud.Bind(Session, Rig, Actors);
         Quality.Apply(GetViewport(), World, Preset);
-        Rig.Snap(ActorLayer.World(Sim.Hero.Position));
+        Rig.Snap(ActorLayer.World(Session.HeroWorld));
         Actors.Prewarm();
-        Fx.Prewarm(ActorLayer.World(Sim.Hero.Position));
+        Fx.Prewarm(ActorLayer.World(Session.HeroWorld));
         _accumulator = 0;
     }
 
     /// <summary>Benchmark: the same fight again on the same map (same seed), without rebuilding the geometry.</summary>
     private void RestartFight()
     {
-        Sim = new Simulation(Options.Seed);
-        if (!Actors.Rebind(Sim)) Actors.Build(Sim);
-        Hud.Bind(Sim, Rig, Actors);
+        Session = new GameSession(Options.Seed);
+        if (!Actors.Rebind(Session)) Actors.Build(Session);
+        Hud.Bind(Session, Rig, Actors);
         _bench!.Restarts++;
         Profiler.Tags.Add("recomeco");
     }
@@ -110,7 +130,7 @@ public partial class Main : Node3D
     private void OpenForShot(string screen)
     {
         var parts = screen.Split(':');
-        if (parts[0] == "inventario") for (int i = 0; i < 2 && Sim.Inventory.Count > 1; i++) Sim.Equip(Sim.Inventory.Count - 1);
+        if (parts[0] == "inventario") for (int i = 0; i < 2 && Session.Hero.Inventory.Items.Count > 1; i++) Gear.FromInventory(Session.Hero, Session.Hero.Inventory.Items.Count - 1);
         Screen s = parts[0] switch
         {
             "menu" => new MainMenuScreen(this), "pausa" => new PauseScreen(this), "inventario" => new CharacterScreen(this), "arvore" => new TreeScreen(this),
@@ -148,17 +168,17 @@ public partial class Main : Node3D
         if (Options.SelfTest) return;
 
         double t0 = Profiler.Now;
-        _accumulator = Math.Min(_accumulator + delta, Simulation.TickSeconds * 5);
-        while (_accumulator >= Simulation.TickSeconds && !Options.Freeze)
+        _accumulator = Math.Min(_accumulator + delta, TickSeconds * 5);
+        while (_accumulator >= TickSeconds && !Options.Freeze)
         {
-            StepOnce(Options.Autopilot ? Autopilot.Next(Sim) : ReadInput());
-            _accumulator -= Simulation.TickSeconds;
+            StepOnce(Options.Autopilot ? SessionPilot.Next(Session) : ReadInput());
+            _accumulator -= TickSeconds;
         }
         Profiler.Add("simulacao", t0);
         double t1 = Profiler.Now;
-        Present((float)(_accumulator / Simulation.TickSeconds), delta);
+        Present((float)(_accumulator / TickSeconds), delta);
         Profiler.Add("apresentacao", t1);
-        if (_bench != null && Sim.Cleared && Sim.Drops.Count == 0) RestartFight();
+        if (_bench != null && (Session.Cleared && Session.Items.Count == 0 || !Session.Hero.Alive)) RestartFight();
 
         _bench?.Frame(delta);
         if (Options.Fx != null && _frames == 2) { Effects.Hold = .35f; Showcase(Options.Fx); }
@@ -183,14 +203,14 @@ public partial class Main : Node3D
     public void StepOnce(in InputFrame input)
     {
         Actors.BeforeStep();
-        Sim.Step(input);
+        Session.Step(input);
         Actors.AfterStep();
-        foreach (var e in Sim.Events) Dispatch(e);
+        foreach (var e in Session.Events) Dispatch(e);
     }
 
     public void Present(float alpha, double delta)
     {
-        var hero = Actors.Interpolated(Sim.Hero, alpha);
+        var hero = Actors.Interpolated(Session.HeroId, alpha);
         Actors.Sync(alpha, delta);
         Rig.Follow(hero, delta);
         World.Tick(delta, hero, Rig.Camera.GlobalPosition);
@@ -199,40 +219,43 @@ public partial class Main : Node3D
     /// <summary>Screenshots of effects: plays one skill's visuals toward the nearest enemy, without touching the rules.</summary>
     private void Showcase(string fx)
     {
-        var hero = Sim.Hero;
-        var target = Sim.Enemies.Where(e => e.Alive).OrderBy(e => NVec.Distance(e.Position, hero.Position)).FirstOrDefault();
-        var dir = target == null ? hero.Facing : NVec.Normalize(target.Position - hero.Position);
-        string id = fx switch { "golpe" => SliceData.GolpeBrutal.Id, "ruptura" => SliceData.Ruptura.Id, "investida" => SliceData.Investida.Id, _ => "" };
-        if (id != "") Dispatch(new SkillEvent(id, hero.Position, dir));
-        if (target != null) Dispatch(new HitEvent(target.Id, 29, target.Position, false));
+        var here = Session.HeroWorld;
+        var target = Session.Enemies.Where(e => e.Alive).OrderBy(e => NVec.Distance(GameSession.ToWorld(e.Position), here)).FirstOrDefault();
+        var dir = target == null ? Session.Facing : NVec.Normalize(GameSession.ToWorld(target.Position) - here);
+        string id = fx switch { "golpe" => "barb2_golpe_brutal", "ruptura" => "barb2_ruptura", "investida" => "barb2_investida", _ => "" };
+        if (id != "") Dispatch(new CastEvent(id, id == "barb2_golpe_brutal" ? "basic" : id, here, dir));
+        if (target != null) Dispatch(new DamageEvent(Session.IdOf(target), 29, GameSession.ToWorld(target.Position), false));
     }
 
-    private void Dispatch(GameEvent e)
+    /// <summary>Visual reach of a swing or cone: the skill's range in tiles (catalog) plus the body.</summary>
+    private float Reach(string skillId) => (float)(Session.RangeOf(skillId) + .5);
+
+    private void Dispatch(PlayEvent e)
     {
-        Profiler.Tags.Add(e is SkillEvent sk ? sk.SkillId.Replace("barb2_", "") : e.GetType().Name.Replace("Event", ""));
+        Profiler.Tags.Add(e is CastEvent c ? c.SkillId.Replace("barb2_", "") : e.GetType().Name.Replace("Event", ""));
         Hud.OnEvent(e);
         switch (e)
         {
-            case HitEvent hit:
+            case DamageEvent hit:
                 Actors.OnHit(hit.TargetId);
                 Fx.Impact(ActorLayer.World(hit.Position, 1f), hit.OnHero);
                 if (hit.OnHero) Rig.Shake(.16f);
                 break;
-            case DiedEvent died:
-                Actors.OnDied(died.ActorId);
+            case DeathEvent died:
+                Actors.OnDied(died.EnemyId);
                 Fx.Death(ActorLayer.World(died.Position));
                 break;
-            case StrikeEvent strike: Actors.OnStrike(strike.EnemyId); break;
-            case SkillEvent skill:
-                var at = ActorLayer.World(skill.Position); var dir = new Vector3(skill.Direction.X, 0, skill.Direction.Y);
-                if (skill.SkillId == SliceData.GolpeBrutal.Id) Fx.Swing(at, dir, SliceData.GolpeBrutal.Range + .35f, SliceData.GolpeBrutal.ArcDegrees);
-                else if (skill.SkillId == SliceData.Ruptura.Id) { Fx.Cone(at, dir, SliceData.Ruptura.Range + .35f, SliceData.Ruptura.ArcDegrees); Rig.Shake(.22f); }
-                else if (skill.SkillId == SliceData.Investida.Id) { Fx.Dash(at); Rig.Shake(.08f); }
+            case CastEvent cast:
+                var at = ActorLayer.World(cast.Position); var dir = new Vector3(cast.Direction.X, 0, cast.Direction.Y);
+                if (dir.LengthSquared() < 1e-4f) dir = new Vector3(Session.Facing.X, 0, Session.Facing.Y);
+                if (cast.SkillId == "barb2_ruptura") { Fx.Cone(at, dir, Reach(cast.SkillId), 90f); Rig.Shake(.22f); }
+                else if (cast.SkillId == "barb2_investida") { Fx.Dash(at); Rig.Shake(.08f); }
+                else Fx.Swing(at, dir, Reach(cast.SkillId), 110f);
                 break;
-            case DroppedEvent dropped: Actors.AddDrop(dropped.Drop); break;
-            case PickedUpEvent picked:
-                Actors.RemoveDrop(picked.Drop);
-                Fx.Burst(ActorLayer.World(picked.Drop.Position, .4f), Materials.Rarity(picked.Drop.Item.Rarity), 20, .7f);
+            case ItemDroppedEvent dropped: Actors.AddDrop(dropped.Item); break;
+            case ItemTakenEvent taken:
+                Actors.RemoveDrop(taken.Item);
+                Fx.Burst(ActorLayer.World(GameSession.ToWorld(taken.Item.Cell), .4f), Materials.RarityOf(taken.Item.Data), 20, .7f);
                 break;
         }
     }
@@ -240,7 +263,7 @@ public partial class Main : Node3D
     /// <summary>Keyboard + mouse and gamepad to one InputFrame, in world units, relative to the camera.</summary>
     private InputFrame ReadInput()
     {
-        var hero = Sim.Hero;
+        var here = Session.HeroWorld; var facing = Session.Facing;
         var (right, up) = Rig.GroundAxes();
         var stick = Input.GetVector("move_left", "move_right", "move_up", "move_down");
         var moveWorld = right * stick.X - up * stick.Y;
@@ -253,25 +276,24 @@ public partial class Main : Node3D
         {
             var source = aimStick.Length() > .3f ? aimStick : stick.Length() > .3f ? stick : Vector2.Zero;
             var w = right * source.X - up * source.Y;
-            aim = source == Vector2.Zero ? hero.Position + hero.Facing : hero.Position + new NVec(w.X, w.Z) * 2;
+            aim = source == Vector2.Zero ? here + facing : here + new NVec(w.X, w.Z) * 2;
         }
         else
         {
             var ground = Rig.GroundUnder(GetViewport().GetMousePosition());
-            aim = ground is { } g ? new NVec(g.X, g.Z) : hero.Position + hero.Facing;
+            aim = ground is { } g ? new NVec(g.X, g.Z) : here + facing;
         }
 
         bool attack = Input.IsActionPressed("attack");
         NVec? destination = null;
         if (!pad && _clickHeld && Screens.Count == 0)
         {
-            var target = Sim.Enemies.FirstOrDefault(e => e.Alive && NVec.Distance(e.Position, aim) < .9f);
+            var target = Session.Enemies.FirstOrDefault(e => e.Alive && NVec.Distance(GameSession.ToWorld(e.Position), aim) < .75f);
             if (target != null)
             {
-                aim = target.Position;                              // click on an enemy: walk up to it, then swing
-                var toward = NVec.Normalize(aim - hero.Position);
-                if (Sim.InArc(target, toward, SliceData.GolpeBrutal.Range, SliceData.GolpeBrutal.ArcDegrees)) attack = true;
-                else destination = target.Position;
+                aim = GameSession.ToWorld(target.Position);        // click on an enemy: walk up to it, then swing
+                if (Session.Adjacent(target)) attack = true;
+                else destination = aim;
             }
             else if (Input.IsKeyPressed(Key.Shift)) attack = true;   // Shift + click: swing in place
             else destination = aim;

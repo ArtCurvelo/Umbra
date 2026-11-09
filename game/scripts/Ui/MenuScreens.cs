@@ -57,7 +57,7 @@ public partial class MainMenuScreen : ListScreen
 
     protected override (string, string?, bool)[] Rows => new (string, string?, bool)[]
     {
-        ("Continuar", _main.RunInProgress ? $"Bárbaro — Cripta Esquecida — {_main.Sim.EnemiesRemaining} inimigos restantes" : "Nenhuma partida em andamento", _main.RunInProgress),
+        ("Continuar", _main.RunInProgress ? $"Bárbaro — Cripta Esquecida — {_main.Session.EnemiesRemaining} inimigos restantes" : "Nenhuma partida em andamento", _main.RunInProgress),
         ("Novo jogo", null, true), ("Configurações", null, true), ("Créditos", null, true), ("Sair", null, true),
     };
 

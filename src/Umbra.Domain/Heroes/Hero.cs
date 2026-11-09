@@ -434,8 +434,11 @@ public sealed class Hero : ISkillUser, IGearOwner, ITreeOwner, IFoeTarget
     }
 
     public IReadOnlyList<ITarget> ActiveEnemies = Array.Empty<ITarget>();
+    /// <summary>Continuous position inside the cell (world/locomotion); null until the first step.</summary>
+    public Motion? Motion;
+    public bool IsMoving;
 
-    private bool CanEnter(int x, int y, IMap map)
+    public bool CanEnter(int x, int y, IMap map)
     {
         if (!(0 <= x && x < map.Width && 0 <= y && y < map.Height)) return false;
         if (map.Cell(x, y) == 1) return false;
