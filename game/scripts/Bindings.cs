@@ -13,7 +13,7 @@ public static class Bindings
     public static readonly (string Action, string Label)[] Remappable =
     {
         ("move_up", "Andar para cima"), ("move_down", "Andar para baixo"), ("move_left", "Andar para a esquerda"), ("move_right", "Andar para a direita"),
-        ("attack", "Golpe Brutal"), ("skill_1", "Ruptura"), ("skill_2", "Investida"), ("inventory", "Personagem"), ("skill_tree", "Habilidades"),
+        ("attack", "Golpe Brutal"), ("skill_1", "Ruptura"), ("skill_2", "Investida"), ("potion", "Poção"), ("inventory", "Personagem"), ("skill_tree", "Habilidades"),
         ("camera_mode", "Câmera iso / top-down"), ("camera_left", "Girar câmera (esq.)"), ("camera_right", "Girar câmera (dir.)"),
     };
 
@@ -31,6 +31,7 @@ public static class Bindings
         Add("attack", Key(Godot.Key.Space), Button(JoyButton.A));                // attack in place, toward the cursor/stick
         Add("skill_1", Key(Godot.Key.Q), Mouse(MouseButton.Right), Button(JoyButton.X));   // Ruptura
         Add("skill_2", Key(Godot.Key.E), Button(JoyButton.Y));                   // Investida
+        Add("potion", Key(Godot.Key.R), Button(JoyButton.DpadLeft));            // PROVISÓRIO: UMBRA uses Q / RB, taken in the slice
         Add("pause", Key(Godot.Key.Escape), Button(JoyButton.Start));
         Add("inventory", Key(Godot.Key.I), Button(JoyButton.Back));              // character and inventory
         Add("skill_tree", Key(Godot.Key.K), Button(JoyButton.RightStick));       // skill tree

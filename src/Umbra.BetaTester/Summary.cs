@@ -22,9 +22,10 @@ public sealed class Summary
     public double IdleShare => Share(r => r.IdleTicks, r => r.Ticks);
     public double DropsPerRun => Count == 0 ? 0 : Runs.Sum(r => r.DropsByRarity.Values.Sum()) / (double)Count;
     public int Drops(string rarity) => Runs.Sum(r => r.DropsByRarity.GetValueOrDefault(rarity));
-    /// <summary>Life a landed Bruto strike took, on average (measured: armor and every rule of the real hero included).</summary>
+    /// <summary>Damage taken per landed strike of a common enemy (measured; boss damage is in the total too).</summary>
     public double DamagePerStrike { get { int n = Runs.Sum(r => r.StrikesLanded); return n == 0 ? 0 : Runs.Sum(r => r.DamageTaken) / (double)n; } }
     public double MeanLevelUps => Mean(Runs.Select(r => (double)r.LevelUps));
+    public double MeanPotions => Mean(Runs.Select(r => (double)r.PotionsUsed));
     public double MeanAttackFromGear => Mean(Finished.Select(r => (double)r.AttackFromGear));
     public double MeanDefenseFromGear => Mean(Finished.Select(r => (double)r.DefenseFromGear));
     public double MeanHealthFromGear => Mean(Finished.Select(r => (double)r.HealthFromGear));

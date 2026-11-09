@@ -19,7 +19,7 @@ public static class Report
         var md = new StringBuilder();
         int runs = all.Sum(s => s.Count);
         md.AppendLine($"# Relatório do beta tester — {date}").AppendLine();
-        md.AppendLine($"Versão testada: `{version}` (vertical slice: Bárbaro nível {Facts.Hero().Level} na cripta com {CryptGeneratorEnemies()} Brutos Abissais, regras reais do UMBRA desde a 5.8c). ");
+        md.AppendLine($"Versão testada: `{version}` (vertical slice: Bárbaro nível {Facts.Hero().Level} na cripta, inimigos da família das criptas no nível do herói, em grupos, com elites e o chefe; regras reais do UMBRA desde a 5.8c). ");
         md.AppendLine($"{runs} partidas jogadas por {all.Count} perfis de jogador, sementes {firstSeed} a {firstSeed + (ulong)all.Max(s => s.Count) - 1}, " +
                       "sem janela, uma de cada vez, com as regras do UMBRA portadas para C#. O bot só aperta os mesmos botões de um jogador (andar, mirar, golpes, inventário, árvore).").AppendLine();
 
@@ -49,14 +49,14 @@ public static class Report
         }
 
         md.AppendLine("## Números por perfil").AppendLine();
-        md.AppendLine("| Perfil | Partidas | Venceu | Morreu | Travou/erro | Tempo (mediana) | Pior vida (média) | Dano tomado | Golpes do Bruto que acertaram | Esquivas tardias | Fúria cheia | Itens/partida |");
-        md.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|");
+        md.AppendLine("| Perfil | Partidas | Venceu | Morreu | Travou/erro | Tempo (mediana) | Pior vida (média) | Dano tomado | Golpes inimigos que acertaram | Esquivas tardias | Fúria cheia | Poções/partida | Itens/partida |");
+        md.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|---|---|");
         foreach (var s in all)
         {
             double broken = s.Rate(Outcome.Stuck) + s.Rate(Outcome.Crashed) + s.Rate(Outcome.Timeout);
             md.AppendLine($"| {s.Persona.Name} | {s.Count} | {P(s.Rate(Outcome.Cleared))} | {P(s.Rate(Outcome.Died))} | {P(broken)} | " +
                           $"{N(s.MedianClearSeconds, "0")} s | {P(s.MeanLowestHealthShare)} | {N(s.MeanDamageTaken, "0")} | {P(s.StrikeLandedShare)} | " +
-                          $"{(s.DodgesWanted == 0 ? "—" : P(s.DodgeLockedShare))} | {P(s.FuryCappedShare)} | {N(s.DropsPerRun)} |");
+                          $"{(s.DodgesWanted == 0 ? "—" : P(s.DodgeLockedShare))} | {P(s.FuryCappedShare)} | {N(s.MeanPotions)} | {N(s.DropsPerRun)} |");
         }
         md.AppendLine();
         foreach (var s in all) md.AppendLine($"- **{s.Persona.Name}:** {s.Persona.Description}");
@@ -89,9 +89,9 @@ public static class Report
         md.AppendLine($"| Mortes do Veterano | até {P(Targets.VeteranoDeathMax)} |");
         md.AppendLine($"| Pior vida do Veterano | {P(Targets.VeteranoLowestMin)}–{P(Targets.VeteranoLowestMax)} |");
         md.AppendLine($"| Tempo do Casual na cripta | {N(Targets.ClearSecondsMin, "0")}–{N(Targets.ClearSecondsMax, "0")} s |");
-        md.AppendLine($"| Golpes do Bruto que acertam o Veterano | até {P(Targets.VeteranoStrikeLandedMax)} |");
+        md.AppendLine($"| Golpes de inimigos comuns que acertam o Veterano | até {P(Targets.VeteranoStrikeLandedMax)} |");
         md.AppendLine($"| Esquivas que chegam tarde (o golpe acerta mesmo assim) | até {P(Targets.DodgeLockedMax)} |");
-        md.AppendLine($"| Tempo para derrotar um Bruto | {N(Targets.KillSecondsMin)}–{N(Targets.KillSecondsMax)} s |");
+        md.AppendLine($"| Tempo para derrotar um inimigo comum | {N(Targets.KillSecondsMin)}–{N(Targets.KillSecondsMax)} s |");
         md.AppendLine($"| Parte da Ruptura no dano do Veterano | ao menos {P(Targets.SpenderShareMin)} |");
         md.AppendLine($"| Tempo com Fúria cheia | até {P(Targets.FuryCappedMax)} |");
         md.AppendLine($"| Golpes no vazio | até {P(Targets.WhiffMax)} |");
@@ -99,11 +99,10 @@ public static class Report
         md.AppendLine();
 
         md.AppendLine("## Limites deste teste").AppendLine();
-        md.AppendLine("- Joga só o que a slice tem: Bárbaro nível 6 (PROVISÓRIO), Brutos Abissais, uma cripta, três habilidades nos espaços. Outras classes entram com a 5.8d.");
+        md.AppendLine("- Joga só o que a slice tem: Bárbaro nível 6 (PROVISÓRIO), uma cripta (sombra, espectro, cultista e o Guardião das Cinzas), três habilidades nos espaços. Outras classes entram com a 5.8d.");
         md.AppendLine("- Não avalia visual, som, leitura da tela nem diversão; mede números de jogo. Os perfis são aproximações de jogadores reais.");
         md.AppendLine("- Regras, itens e ranks são os do UMBRA. Ficam fora o dano desperdiçado (a partida informa só a vida tirada) e o crítico e o combo na tabela de golpes por rank.");
         return md.ToString();
     }
 
-    private static int CryptGeneratorEnemies() => Umbra.Domain.World.CryptGenerator.EnemyCount;
 }

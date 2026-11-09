@@ -27,6 +27,7 @@ public partial class ActorLayer : Node3D
         public float WalkPhase, FlashTime, DeathTime = -1, Yaw, StepTime;
         public int LungeTick = -1000;
         public bool WasWinding;
+        public string Look = "";
     }
 
     private readonly Dictionary<int, View> _views = new();
@@ -53,7 +54,7 @@ public partial class ActorLayer : Node3D
         for (int i = 0; i < ids.Count; i++)
         {
             var v = views[i]; bool hero = ids[i] == session.HeroId;
-            if (v.Hero != hero) return false;
+            if (v.Hero != hero || !hero && v.Look != LookOf(session.EnemyById(ids[i])!).Key) return false;
             v.Id = ids[i]; v.Previous = v.Current = session.PositionOf(v.Id); v.DeathTime = -1; v.FlashTime = 0; v.LungeTick = -1000; v.WasWinding = false;
             v.Body.Rotation = Vector3.Zero; v.Body.Position = Vector3.Zero;
             v.Skin.SetShaderParameter("dead", 0f); v.Skin.SetShaderParameter("flash", 0f);
@@ -66,10 +67,17 @@ public partial class ActorLayer : Node3D
     {
         _session = session;
         foreach (var child in GetChildren()) child.QueueFree();
-        _views.Clear(); _drops.Clear();
+        _views.Clear(); _drops.Clear(); _danger.Clear();
         _views[session.HeroId] = MakeView(session.HeroId, true, LaunchOptions.Skip.Contains("hero") ? "none" : "res://assets/models/barbaro.gltf", 1f);
         if (!LaunchOptions.Skip.Contains("enemies"))
-            foreach (var e in session.Enemies) _views[session.IdOf(e)] = MakeView(session.IdOf(e), false, "res://assets/models/bruto.gltf", 1.12f);
+            foreach (var e in session.Enemies)
+            {
+                var look = LookOf(e);
+                var view = MakeView(session.IdOf(e), false, "res://assets/models/bruto.gltf", look.Scale);
+                view.Look = look.Key; view.Skin.SetShaderParameter("tint", look.Tint);
+                if (look.Rim is { } rim) view.Skin.SetShaderParameter("rim_color", rim);
+                _views[view.Id] = view;
+            }
         foreach (var d in session.Items) AddDrop(d);
         _dashTrail = new CpuParticles3D
         {
@@ -90,6 +98,66 @@ public partial class ActorLayer : Node3D
         };
         _views[session.HeroId].Root.AddChild(_dust);
         foreach (var v in _views.Values) if (!session.AliveOf(v.Id)) v.DeathTime = 10f;      // fast-forwarded: already lying down
+    }
+
+    /// <summary>PROVISÓRIO until the art phase: only the Bruto has a model, so the crypt family wears it with a tint and a
+    /// size of its own; the boss is larger and takes its profile colour (boss_catalog.color); elites get a golden rim.</summary>
+    private static (string Key, float Scale, Color Tint, Color? Rim) LookOf(Umbra.Domain.Enemies.Enemy e)
+    {
+        if (e.Boss)
+        {
+            var c = e.Controller?.Profile.List("color");
+            var tint = c is { Count: >= 3 } ? Materials.Rgb((int)Py.Num(c[0]), (int)Py.Num(c[1]), (int)Py.Num(c[2])).Lightened(.25f) : Colors.White;
+            return ("boss", 1.6f, tint, Materials.Rgb(255, 140, 60));
+        }
+        Color? elite = e.Rank == "elite" ? Materials.Rgb(255, 205, 80) : null;
+        return e.EnemyType switch
+        {
+            "sombra" => ("sombra" + e.Rank, .95f, Materials.Rgb(150, 125, 200), elite),
+            "espectro" => ("espectro" + e.Rank, 1.05f, Materials.Rgb(165, 205, 255), elite),
+            "cultista" => ("cultista" + e.Rank, 1f, Materials.Rgb(255, 150, 120), elite),
+            _ => (e.EnemyType + e.Rank, 1.12f, Colors.White, elite),
+        };
+    }
+
+    // ---------------------------------------------------------------- cells about to be hit
+    private readonly List<MeshInstance3D> _danger = new();
+
+    /// <summary>The cells an attack in preparation will hit (GameSession.Danger), as red tiles that fill in as the wind-up
+    /// runs out: the marked cell of an enemy, the boss's blow and ability area, its corruption zones.</summary>
+    private void SyncDanger()
+    {
+        var cells = new Dictionary<(int X, int Y), float>();
+        foreach (var (cell, progress) in _session.Danger()) cells[cell] = Math.Max(cells.GetValueOrDefault(cell), progress);
+        int i = 0;
+        foreach (var (cell, progress) in cells)
+        {
+            if (i == _danger.Count)
+            {
+                var quad = new MeshInstance3D { Mesh = new PlaneMesh { Size = new Vector2(.94f, .94f) }, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+                AddChild(quad); _danger.Add(quad);
+            }
+            var q = _danger[i++];
+            q.Position = World(GameSession.ToWorld(cell), .025f);
+            q.Visible = true;
+            q.MaterialOverride = DangerShade(progress);
+        }
+        for (; i < _danger.Count; i++) _danger[i].Visible = false;
+    }
+
+    private readonly Dictionary<int, StandardMaterial3D> _dangerShades = new();
+
+    /// <summary>Ten steps of red, from faint to strong, shared by every tile (no material per frame).</summary>
+    private StandardMaterial3D DangerShade(float progress)
+    {
+        int step = Math.Clamp((int)(progress * 10), 0, 10);
+        if (_dangerShades.TryGetValue(step, out var m)) return m;
+        m = new StandardMaterial3D
+        {
+            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+            AlbedoColor = Materials.Rgb(230, 40, 30, .18f + .42f * step / 10f), CullMode = BaseMaterial3D.CullModeEnum.Disabled,
+        };
+        return _dangerShades[step] = m;
     }
 
     private static Gradient Twinkle()
@@ -250,6 +318,7 @@ public partial class ActorLayer : Node3D
     public void Sync(float alpha, double delta)
     {
         float dt = (float)delta;
+        SyncDanger();
         if (_dust != null) _dust.Emitting = Dust && Effects.ParticleScale > 0;
         for (int i = _warm.Count - 1; i >= 0; i--)
         {

@@ -43,6 +43,7 @@ public sealed record ItemDroppedEvent(GroundItem Item) : PlayEvent;
 public sealed record ItemTakenEvent(GroundItem Item, bool ToBag) : PlayEvent;
 public sealed record LevelUpEvent(int Level) : PlayEvent;
 public sealed record HeroDownEvent : PlayEvent;
+public sealed record PotionEvent(long Left) : PlayEvent;
 
 /// <summary>
 /// The vertical slice on UMBRA's real rules (step 5.8c): the real Bárbaro (Heroes.Hero, HeroCombat, Locomotion), the real
@@ -59,9 +60,11 @@ public sealed class GameSession
     /// so Ruptura (level 3) and Investida (level 6) are available as before. A new UMBRA hero starts at level 1.</summary>
     public const int StartLevel = 6;
     public static readonly string[] StartSkills = { "barb2_golpe_brutal", "barb2_ruptura", "barb2_investida" };
+    /// <summary>The crypt family's encounters (world/themes.THEMES, 'Criptas das Cinzas'), chosen by the Game Director.</summary>
+    public static readonly string[] CryptPool = { "sombra", "espectro", "cultista" };
 
     private readonly PyRandom _rng;
-    private bool _held1, _held2;
+    private bool _held1, _held2, _heldPotion;
     private readonly HeroSkillHooks _hooks = new();
     private int _nextId = 1000;
     private readonly HashSet<EnemyActor> _processed = new(ReferenceEqualityComparer.Instance);
@@ -92,13 +95,62 @@ public sealed class GameSession
         foreach (var id in StartSkills.Where(id => Hero.Tree.Nodes.ContainsKey("learn:" + id))) TreeRules.Learn(Hero, "learn:" + id);
         for (int slot = 0; slot < StartSkills.Length; slot++)
             if (Hero.Tree.Has("learn:" + StartSkills[slot])) TreeRules.Equip(Hero, StartSkills[slot], slot);
-        foreach (var spawn in Map.EnemySpawns)
-        {
-            var enemy = new EnemyActor(ToCell(spawn), Floor, false, "bruto") { AttackDirection = (-1, 0) };
-            _ids[enemy] = _nextId++; Enemies.Add(enemy);
-        }
+        Populate();
         Locomotion.Sync(Hero, Grid);
     }
+
+    /// <summary>
+    /// UMBRA's dungeon rule (world/sessions.create_floor) on the slice's crypt: each of the crypt's spawn points stands for a
+    /// room — a pack appears with chance min(.94, .78 + floor × .006), of 1/2/3 enemies (weights 42/40/18) of one type of
+    /// the crypt family, up to min(28, 10 + floor × .7) enemies. Enemies take the hero's level (world/adventure_maps:
+    /// max(1, floor, player level)); elites are rolled (elites.roll); the boss waits at the far end of the burial chamber
+    /// at level max(5, floor), as in the open world's boss dungeons.
+    /// </summary>
+    private void Populate()
+    {
+        int level = Math.Max(1, Math.Max(Floor, Hero.Level));
+        int max = Math.Min(28, 10 + (int)(Floor * 0.7));
+        var chamber = Map.Rooms[^1];
+        var bossCell = (chamber.X + chamber.Width - 2, chamber.Y + chamber.Height / 2);
+        var taken = new HashSet<(int X, int Y)> { bossCell, Hero.Position };
+        var normal = new List<EnemyActor>();
+        foreach (var anchor in Map.EnemySpawns)
+        {
+            if (normal.Count >= max) break;
+            if (_rng.Random() > Math.Min(0.94, 0.78 + Floor * 0.006)) continue;
+            double roll = _rng.Random() * 100;                          // random.choices([1, 2, 3], weights=[42, 40, 18])
+            int pack = roll < 42 ? 1 : roll < 82 ? 2 : 3;
+            string type = _rng.Choice(CryptPool);
+            for (int i = 0; i < Math.Min(pack, max - normal.Count); i++)
+                if (OpenCellNear(ToCell(anchor), taken) is { } cell)
+                {
+                    taken.Add(cell);
+                    normal.Add(Add(new EnemyActor(cell, level, false, type) { AttackDirection = (-1, 0) }));
+                }
+        }
+        Elites.Roll(normal, _rng);
+        Boss = Add(new EnemyActor(bossCell, Math.Max(5, Floor), true) { AttackDirection = (-1, 0) });
+    }
+
+    private EnemyActor Add(EnemyActor enemy) { _ids[enemy] = _nextId++; Enemies.Add(enemy); return enemy; }
+
+    /// <summary>The anchor itself, then the ring of 8 around it, then the ring at distance 2 (fixed order, so a seed always
+    /// gives the same crypt).</summary>
+    private (int X, int Y)? OpenCellNear((int X, int Y) anchor, HashSet<(int X, int Y)> taken)
+    {
+        for (int r = 0; r <= 2; r++)
+            for (int dy = -r; dy <= r; dy++)
+                for (int dx = -r; dx <= r; dx++)
+                {
+                    if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != r) continue;
+                    var c = (X: anchor.X + dx, Y: anchor.Y + dy);
+                    if (Map.InBounds(c.X, c.Y) && !Map.IsWall(c.X, c.Y) && !taken.Contains(c)) return c;
+                }
+        return null;
+    }
+
+    /// <summary>The crypt's boss (Guardião das Cinzas at level 5).</summary>
+    public EnemyActor Boss { get; private set; } = null!;
 
     // ---------------------------------------------------------------- coordinates
     public static (int X, int Y) ToCell(Vector2 world) => ((int)MathF.Floor(world.X), (int)MathF.Floor(world.Y));
@@ -124,6 +176,8 @@ public sealed class GameSession
         if (input.Aim.LengthSquared() > 1e-4f) hero.AimTarget = ToCell(input.Aim);
         bool skill1 = input.Skill1 && !_held1, skill2 = input.Skill2 && !_held2;          // a skill fires on the press
         _held1 = input.Skill1; _held2 = input.Skill2;
+        bool potion = input.Potion && !_heldPotion; _heldPotion = input.Potion;
+        if (hero.Alive && potion && hero.UsePotion()) Events.Add(new PotionEvent(hero.Inventory.Potion));   // player.use_potion
         if (hero.Alive)
         {
             if (skill2) HeroCombat.UseSkill(hero, Enemies, 1);
@@ -167,6 +221,7 @@ public sealed class GameSession
             if (enemy.Alive || !_processed.Add(enemy)) continue;
             if (enemy.Summoned) continue;
             Kills++;
+            if (enemy.Boss) { BossDeath(enemy); continue; }
             int level = Hero.Level;
             Hero.GainXp(Elites.Xp(enemy, ItemLevelsXp(Math.Max(Floor, Hero.Level))));
             if (Hero.Level > level) Events.Add(new LevelUpEvent(Hero.Level));
@@ -180,6 +235,27 @@ public sealed class GameSession
             double roll = _rng.Random();
             string? kind = roll < 0.05 ? "potion" : roll < 0.20 ? "gold" : roll < 0.29 ? "weapon" : roll < 0.37 ? "armor" : roll < 0.43 ? "accessory" : null;
             if (kind != null) Drop(kind, enemy.Position);
+        }
+    }
+
+    /// <summary>process_enemy_deaths, boss branch: Fúria 28, the profile's experience and gold, then a potion, gold, a weapon,
+    /// an accessory, a resource orb and the boss's own relic (skills/catalog.RELIC_CATALOG) on its cell.</summary>
+    private void BossDeath(EnemyActor boss)
+    {
+        Hero.GainResource(28, "boss_kill");
+        var profile = FoeTables.BossProfile(Math.Max(5, Floor));
+        int level = Hero.Level;
+        Hero.GainXp((long)Math.Max(0, profile.Num("reward_xp", profile.Num("xp", 0))));
+        if (Hero.Level > level) Events.Add(new LevelUpEvent(Hero.Level));
+        Hero.Gold += (long)profile.Num("reward_gold", 0);
+        foreach (var kind in new[] { "potion", "gold", "weapon", "accessory" }) Drop(kind, boss.Position);
+        var orb = Drop("resource_orb", boss.Position);
+        orb.Data["name"] = "Orbe de " + System.Globalization.CultureInfo.GetCultureInfo("pt-BR").TextInfo.ToTitleCase(Hero.ResourceLabel.ToLowerInvariant());
+        var relic = Drop("relic", boss.Position);
+        if (ItemTables.Section("items").Sub("RELIC_BY_BOSS")?.Sub(profile.Str("name")) is { } own)
+        {
+            foreach (var (key, value) in own) relic.Data[key] = Py.DeepCopy(value);
+            relic.Data["rarity"] = "Lendário";
         }
     }
 
@@ -256,6 +332,37 @@ public sealed class GameSession
         var row = HeroTables.SkillRow(skillId) ?? HeroTables.BasicRow(skillId);
         return row == null ? 1 : TreeRules.Resolve(Hero.Tree, row).Num("range", 1);
     }
+    /// <summary>Cells an attack in preparation will hit, with how far the preparation is (0..1): an enemy's marked cell
+    /// (perform_attack hits only the hero still on it), the boss's basic blow, the area of the ability it is preparing
+    /// (BossController.execute_ability: Manhattan radius around the marked cell) and its corruption zones.</summary>
+    public IEnumerable<((int X, int Y) Cell, float Progress)> Danger()
+    {
+        foreach (var e in Enemies)
+        {
+            if (!e.Alive) continue;
+            if (Threat(e) is { } t)
+                foreach (var cell in t.Cells) yield return (cell, t.Elapsed / (float)Math.Max(1, t.Elapsed + t.Left));
+            if (e.Controller is { } c) foreach (var zone in c.Zones) yield return (zone.Position, 1f);
+        }
+    }
+
+    /// <summary>The attack an enemy is preparing: the cells it will hit, the ticks since it began and the ticks left.</summary>
+    public (List<(int X, int Y)> Cells, int Elapsed, int Left)? Threat(EnemyActor e)
+    {
+        if (!e.Alive) return null;
+        if (e.Controller is not { } c)
+            return e.Windup > 0 && e.AttackTarget is { } t ? (new() { t }, e.WindupDuration - e.Windup, e.Windup) : null;
+        if (c.BasicTimer > 0 && c.BasicTarget is { } b) return (new() { b }, c.BasicTotal - c.BasicTimer, c.BasicTimer);
+        if (c.PendingAbility is not { } ability || c.PendingTarget is not { } m) return null;
+        int radius = ability switch { "onda_cinzas" => 2, "projetil_vazio" or "zona_corrupcao" => 0, "teleporte" or "invocar_esqueletos" or "armadura_ossea" => -1, _ => 1 };
+        var cells = new List<(int X, int Y)>();
+        for (int dy = -radius; dy <= radius; dy++)
+            for (int dx = -radius; dx <= radius; dx++)
+                if (Math.Abs(dx) + Math.Abs(dy) <= radius && Map.InBounds(m.X + dx, m.Y + dy) && !Map.IsWall(m.X + dx, m.Y + dy))
+                    cells.Add((m.X + dx, m.Y + dy));
+        return cells.Count == 0 ? null : (cells, c.PendingTotal - c.PendingTimer, c.PendingTimer);
+    }
+
     /// <summary>Who stands next to the hero (UMBRA melee reach: one tile, diagonals included).</summary>
     public bool Adjacent(EnemyActor e) => Math.Max(Math.Abs(e.X - Hero.X), Math.Abs(e.Y - Hero.Y)) <= 1;
 

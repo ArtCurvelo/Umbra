@@ -346,7 +346,65 @@
      "defense": 3
     }
    }
-  ]
+  ],
+  "RELIC_BY_BOSS": {
+   "Guardião das Cinzas": {
+    "name": "Brasa do Primeiro Carrasco",
+    "stats": {
+     "attack": 2,
+     "defense": 2
+    }
+   },
+   "Cavaleiro Rubro": {
+    "name": "Selo do Juramento Sangrento",
+    "stats": {
+     "attack": 4,
+     "defense": 1
+    }
+   },
+   "Oráculo do Vazio": {
+    "name": "Lente do Observador",
+    "stats": {
+     "attack": 3,
+     "defense": 1
+    }
+   },
+   "Colosso Ossário": {
+    "name": "Osso do Rei dos Restos",
+    "stats": {
+     "attack": 1,
+     "defense": 4
+    }
+   },
+   "Rainha Vésper": {
+    "name": "Coração da Tecelã",
+    "stats": {
+     "attack": 3,
+     "defense": 2
+    }
+   },
+   "O Devorador": {
+    "name": "Mandíbula da Fome",
+    "stats": {
+     "attack": 5,
+     "defense": 1
+    }
+   },
+   "Dragão Cinzento": {
+    "name": "Escama das Asas da Ruína",
+    "stats": {
+     "attack": 4,
+     "defense": 3
+    }
+   },
+   "Rei Sem Sol": {
+    "name": "Coroa do Último Trono",
+    "stats": {
+     "attack": 5,
+     "defense": 3
+    }
+   }
+  }
  },
  "loot": {
   "WEAPONS": {

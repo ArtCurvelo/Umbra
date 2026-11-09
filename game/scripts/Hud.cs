@@ -21,7 +21,8 @@ public partial class Hud : CanvasLayer
     private ActorLayer _actors = null!;
     // One canvas per part: each is redrawn only when what it shows changes (text drawing is the HUD's cost).
     private readonly Canvas _overlay = new() { Part = "mundo" }, _objective = new() { Part = "objetivo" },
-                            _loot = new() { Part = "itens" }, _bottom = new() { Part = "painel" }, _banner = new() { Part = "faixa" };
+                            _loot = new() { Part = "itens" }, _bottom = new() { Part = "painel" }, _banner = new() { Part = "faixa" },
+                            _boss = new() { Part = "chefe" };
     private readonly Dictionary<string, string> _signatures = new();
     private float _time;
 
@@ -43,6 +44,7 @@ public partial class Hud : CanvasLayer
                 case "objetivo": Host.DrawObjective(this); break;
                 case "itens": Host.DrawLoot(this, Size); break;
                 case "painel": Host.DrawBottom(this, Size); break;
+                case "chefe": Host.DrawBoss(this, Size); break;
                 default: Host.DrawBanner(this, Size); break;
             }
             Profiler.Add("hud", t);
@@ -51,7 +53,7 @@ public partial class Hud : CanvasLayer
 
     public override void _Ready()
     {
-        foreach (var c in new[] { _overlay, _objective, _loot, _bottom, _banner })
+        foreach (var c in new[] { _overlay, _objective, _loot, _bottom, _boss, _banner })
         {
             c.Host = this;
             c.SetAnchorsPreset(Control.LayoutPreset.FullRect);
@@ -98,18 +100,20 @@ public partial class Hud : CanvasLayer
         string size = _bottom.Size.ToString();
         string cooldowns = string.Join(',', h.Skills.Cooldowns.Values.Select(v => v / 6));
         Redraw(_objective, ObjectiveText + size);
+        var boss = _session.Boss; var bc = boss.Controller;
+        Redraw(_boss, BossShown ? $"{boss.Health}|{boss.MaxHealth}|{bc?.Phase}|{(bc is { MessageTimer: > 0 } ? bc.Message : "")}|{size}" : "-");
         Redraw(_loot, _toasts.Count + "|" + string.Join(',', _toasts.Select(t => (int)Math.Min(90, (_time - t.Born) * 10) is var a && a >= 70 ? a : 0)) + size);
-        Redraw(_bottom, $"{h.Health}|{h.MaxHealth}|{h.Resource}|{h.MaxResource}|{h.Xp}|{h.Level}|{cooldowns}|{h.BasicSkillId}|{string.Join(',', h.EquippedMainSkills)}|{DeviceTracker.Current}|{size}");
+        Redraw(_bottom, $"{h.Inventory.Potion}|{h.Health}|{h.MaxHealth}|{h.Resource}|{h.MaxResource}|{h.Xp}|{h.Level}|{cooldowns}|{h.BasicSkillId}|{string.Join(',', h.EquippedMainSkills)}|{DeviceTracker.Current}|{size}");
         Redraw(_banner, Banner + DeviceTracker.Current + size + (ShowFps ? Engine.GetFramesPerSecond().ToString() : ""));
     }
 
     private void UpdateObjective()
     {
         if (_session == null) return;
-        string name = _session.Enemies.Count > 0 ? _session.Enemies[0].Name : "Inimigos";
+        int total = _session.Enemies.Count(e => !e.Summoned), left = _session.Enemies.Count(e => !e.Summoned && e.Alive);
         ObjectiveText = _session.Cleared
             ? (_session.Items.Count > 0 ? "A cripta está em silêncio. Recolha o que restou." : "Cripta limpa.")
-            : $"{name}: {_session.EnemiesRemaining} de {_session.Enemies.Count}";
+            : $"Inimigos: {left} de {total}" + (_session.Boss.Alive ? "  —  o guardião espera" : "");
         if (_session.Cleared && _session.Items.Count == 0 && Banner == "") Banner = "clear";
     }
 
@@ -197,6 +201,11 @@ public partial class Hud : CanvasLayer
         c.DrawRect(xp, Materials.IronDark);
         c.DrawRect(new Rect2(xp.Position, new Vector2(xp.Size.X * Mathf.Clamp(hero.Xp / (float)Math.Max(1, hero.XpToNext), 0, 1), xp.Size.Y)), Materials.Gold);
         UiKit.Text(c, $"NÍVEL {hero.Level}", new Vector2(panel.Position.X + 18, panel.Position.Y - 6), 11, Materials.Gold);
+        // potions (player.use_potion: half the life), with the device's prompt
+        var potionKey = new Vector2(panel.Position.X + 300, panel.Position.Y - 10);
+        UiKit.Prompt(c, potionKey, DeviceTracker.Current, "R", "Esq.", 10);   // D-pad left
+        UiKit.Text(c, $"POÇÕES {hero.Inventory.Potion}", new Vector2(potionKey.X - 18, panel.Position.Y - 6), 11,
+                   hero.Inventory.Potion > 0 ? Materials.Bone : Umbra.Game.Ui.Parts.Faint, HorizontalAlignment.Right, 120);
 
         var device = DeviceTracker.Current;
         var keys = new[] { ("M1", "A"), ("M2", "X"), ("E", "Y") };
@@ -254,6 +263,31 @@ public partial class Hud : CanvasLayer
                 c.DrawLine(m + new Vector2(6, -18), m + new Vector2(18, -6), col, 4);
                 break;
         }
+    }
+
+    /// <summary>The boss's bar shows once it has noticed the hero (line of sight within its reach) or has been hurt.</summary>
+    private bool BossShown
+    {
+        get
+        {
+            var b = _session.Boss; var h = _session.Hero;
+            if (!b.Alive) return false;
+            if (b.Health < b.MaxHealth || b.Controller is { PendingAbility: not null } || b.Controller is { BasicTimer: > 0 }) return true;
+            return Math.Max(Math.Abs(b.X - h.X), Math.Abs(b.Y - h.Y)) <= 12;
+        }
+    }
+
+    /// <summary>Boss bar (top centre, as UMBRA draws it): name, life, phase, and what it is preparing.</summary>
+    private void DrawBoss(Control c, Vector2 size)
+    {
+        if (!BossShown) return;
+        var b = _session.Boss; var ctl = b.Controller;
+        // right of the objective panel (which ends near x = 440 at 1280 wide)
+        var r = new Rect2(Mathf.Max(470, size.X / 2 - 180), 34, 440, 20);
+        UiKit.Text(c, b.Name.ToUpperInvariant() + (ctl is { Phase: 2 } ? "  —  FASE II" : ""), new Vector2(r.Position.X, r.Position.Y - 8), 11, Materials.Gold, HorizontalAlignment.Center, r.Size.X);
+        UiKit.Bar(c, r, b.Health, b.MaxHealth, Materials.Blood, $"{b.Health}/{b.MaxHealth}");
+        if (ctl is { MessageTimer: > 0 } && ctl.Message != "")
+            UiKit.Text(c, ctl.Message, new Vector2(r.Position.X, r.End.Y + 24), 22, Materials.Bone, HorizontalAlignment.Center, r.Size.X);
     }
 
     private void DrawBanner(Control c, Vector2 size)

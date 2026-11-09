@@ -70,7 +70,8 @@ def equipment():
     take = lambda module, *names: {n: getattr(module, n) for n in names}
     return {
         'items': {'RARITIES': items.RARITIES, 'WEAPONS': items.WEAPONS, 'ARMORS': items.ARMORS, 'WEAPON_BASE': items.WEAPON_BASE,
-                  'ARMOR_BASE': items.ARMOR_BASE, 'ACCESSORIES': items.ACCESSORIES, 'RELICS': list(RELIC_CATALOG.values())},
+                  'ARMOR_BASE': items.ARMOR_BASE, 'ACCESSORIES': items.ACCESSORIES, 'RELICS': list(RELIC_CATALOG.values()),
+                  'RELIC_BY_BOSS': RELIC_CATALOG},
         'loot': take(loot, 'WEAPONS', 'ARMORS', 'SUFFIXES'),
         'slots': take(slots, 'ARMOR', 'JEWELRY', 'CLASS_WEAPONS', 'LABELS', 'SUPPORT_SLOTS'),
         'legendary': {'CATALOG': legendary.CATALOG},

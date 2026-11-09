@@ -34,7 +34,7 @@ public class BetaTesterTests
         Assert.Equal(rec.Enemies, rec.Kills);
         Assert.Equal(rec.Kills, rec.Skills.Values.Sum(s => s.Kills));
         Assert.Equal(rec.Kills, rec.KillTicks.Count);
-        Assert.Equal(rec.Enemies * Facts.Brute().MaxHealth, rec.Skills.Values.Sum(s => s.Damage));  // life taken = all enemy life
+        Assert.True(rec.Skills.Values.Sum(s => s.Damage) >= rec.EnemyLife);                        // all life taken (the boss's drain heals it)
         Assert.Equal(Facts.Hero().Points, rec.PointsSpent);                                          // spends every starting point
     }
 
@@ -48,8 +48,8 @@ public class BetaTesterTests
         Assert.True(rec.Skill(Facts.Golpe).Casts > 0);
     }
 
-    /// <summary>The rank table is the game's damage: the first swing of a fresh hero on a full-life Bruto (combo ×1,00, the
-    /// slice's Bárbaro has no crit) takes exactly the rank-1 value.</summary>
+    /// <summary>The rank table is the game's damage: the first swing of a fresh hero on a full-life enemy (combo ×1,00, the
+    /// slice's Bárbaro has no crit) takes exactly the rank-1 value for that enemy's armor.</summary>
     [Fact]
     public void HitsToKillMatchTheGame()
     {
@@ -60,7 +60,12 @@ public class BetaTesterTests
         for (int i = 0; i < 3000 && s.Hero.Alive; i++)
         {
             s.Step(SessionPilot.Next(s) with { Skill1 = false, Skill2 = false });
-            if (s.Events.OfType<DamageEvent>().FirstOrDefault(e => !e.OnHero) is { } hit) { Assert.Equal(table[0].Damage, hit.Amount); return; }
+            if (s.Events.OfType<DamageEvent>().FirstOrDefault(e => !e.OnHero) is { } hit)
+            {
+                var enemy = s.EnemyById(hit.TargetId)!;
+                Assert.Equal(Math.Min(enemy.MaxHealth, Facts.Damage(Facts.Golpe, 1, enemy.Defense)), hit.Amount);
+                return;
+            }
         }
         Assert.Fail("nenhum golpe acertou");
     }

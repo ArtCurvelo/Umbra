@@ -22,8 +22,10 @@ public sealed class RunRecord
     public int Ticks { get; set; }
     public double Seconds => Ticks / (double)Facts.TicksPerSecond;
     public int Enemies { get; set; }
+    public int EnemyLife { get; set; }                    // the crypt's total life at the start (boss included)
     public int Kills { get; set; }
     public int LevelUps { get; set; }
+    public int PotionsUsed { get; set; }
 
     public int DamageTaken { get; set; }
     public int MaxHealth { get; set; }

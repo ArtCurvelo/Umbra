@@ -16,12 +16,14 @@ public enum GearHabit { Never, EmptySlots, Upgrades }
 /// <param name="Gear">How loot is equipped.</param>
 /// <param name="SpendsPoints">Spends the skill points on the tree.</param>
 /// <param name="Chaos">Share of decisions replaced by random input (robustness and stuck tests).</param>
+/// <param name="PotionAt">Drinks a potion when life falls below this share (0 = never).</param>
 public sealed record Persona(string Id, string Name, string Description, int ReactionTicks, int ThinkTicks, float AimErrorDegrees,
-                             double DodgeChance, int ConeGroup, bool UsesDash, GearHabit Gear, bool SpendsPoints, double Chaos = 0)
+                             double DodgeChance, int ConeGroup, bool UsesDash, GearHabit Gear, bool SpendsPoints, double Chaos = 0,
+                             double PotionAt = .35)
 {
     public static readonly Persona Novato = new("novato", "Novato",
-        "Reação lenta, mira imprecisa, só o ataque básico, não esquiva, equipa só em espaço vazio, ignora a árvore.",
-        24, 12, 25f, 0, 0, false, GearHabit.EmptySlots, false);
+        "Reação lenta, mira imprecisa, só o ataque básico, não esquiva, equipa só em espaço vazio, ignora a árvore; bebe poção tarde (25% da vida).",
+        24, 12, 25f, 0, 0, false, GearHabit.EmptySlots, false, PotionAt: .25);
 
     public static readonly Persona Casual = new("casual", "Casual",
         "Reação média, usa Ruptura em grupos de 3, esquiva metade das vezes, equipa melhorias e gasta pontos.",

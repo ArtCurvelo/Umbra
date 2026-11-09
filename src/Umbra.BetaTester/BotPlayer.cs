@@ -1,5 +1,6 @@
 using System.Numerics;
 using Umbra.Domain.Combat.V16;
+using Umbra.Domain.Enemies;
 using Umbra.Domain.Play;
 using EnemyActor = Umbra.Domain.Enemies.Enemy;
 
@@ -18,7 +19,7 @@ public sealed class BotPlayer
     private readonly Random _rng;
     private InputFrame _held;
     private int _nextThink;
-    private int _dodgeUntil = -1;
+    private int _dodgeUntil = -1, _nextPotion;
     private Vector2 _dodgeDir;
     private readonly HashSet<(EnemyActor Enemy, int Start)> _judged = new();
     private readonly HashSet<EnemyActor> _dodging = new();
@@ -39,12 +40,24 @@ public sealed class BotPlayer
             var enemy = s.EnemyById(e.EnemyId);
             if (enemy != null && _dodging.Remove(enemy) && e.Landed) DodgesLocked++;
         }
+        // the boss's blows and abilities: the threat is over; it was late if the hero was hurt as it resolved
+        bool hurt = s.Events.Any(e => e is DamageEvent { OnHero: true });
+        foreach (var boss in _dodging.Where(e => e.Boss && s.Threat(e) == null).ToList())
+        {
+            _dodging.Remove(boss);
+            if (hurt) DodgesLocked++;
+        }
         foreach (var item in s.Items) if (item.Cell == s.Hero.Position) Skipped.Add(item.Id);
     }
 
     public InputFrame Next(GameSession s)
     {
         var here = s.HeroWorld;
+        if (_p.PotionAt > 0 && s.Hero.Alive && s.Hero.Inventory.Potion > 0 && s.Hero.Health < s.Hero.MaxHealth * _p.PotionAt && s.Tick >= _nextPotion)
+        {
+            _nextPotion = s.Tick + 30;                       // one press, then a moment before the next decision to drink
+            return InputFrame.None(here + s.Facing) with { Potion = true };
+        }
         if (s.Tick < _dodgeUntil) return new InputFrame(_dodgeDir, null, here + _dodgeDir, false, false, false);
         if (Threat(s) is { } threat) return threat;
         if (s.Tick < _nextThink) return _held with { Skill1 = false, Skill2 = false };
@@ -53,26 +66,28 @@ public sealed class BotPlayer
         return _held;
     }
 
-    /// <summary>Steps off the cell a wound-up enemy is aimed at, once the persona has had time to react
-    /// (Enemy.perform_attack only hits if the hero still stands on the marked cell).</summary>
+    /// <summary>Steps out of the cells an attack in preparation will hit (the red tiles: an enemy's marked cell, the boss's
+    /// blow or ability area), once the persona has had time to react.</summary>
     private InputFrame? Threat(GameSession s)
     {
         if (_p.DodgeChance <= 0) return null;
         var hero = s.Hero; var here = s.HeroWorld;
         foreach (var enemy in s.Enemies)
         {
-            if (!enemy.Alive || enemy.Windup <= 0 || enemy.AttackTarget != hero.Position) continue;
-            int elapsed = enemy.WindupDuration - enemy.Windup;
+            if (s.Threat(enemy) is not { } t || !t.Cells.Contains(hero.Position)) continue;
+            int elapsed = t.Elapsed;
             int start = s.Tick - elapsed;
             if (elapsed < _p.ReactionTicks || !_judged.Add((enemy, start))) continue;
             if (_rng.NextDouble() >= _p.DodgeChance) continue;
             DodgesStarted++; _dodging.Add(enemy);
-            var away = here - GameSession.ToWorld(enemy.Position);
+            var centre = t.Cells.Count > 1 ? new Vector2((float)t.Cells.Average(c => c.X) + .5f, (float)t.Cells.Average(c => c.Y) + .5f) : GameSession.ToWorld(enemy.Position);
+            var away = here - centre;
+            if (away.LengthSquared() < 1e-4f) away = here - GameSession.ToWorld(enemy.Position);
             var dir = away.LengthSquared() > 1e-4f ? Vector2.Normalize(away) : -s.Facing;
             // Back away, bending toward the side with room (a wall behind keeps the hero on the marked cell).
             var side = new Vector2(-dir.Y, dir.X) * (_rng.Next(2) == 0 ? 1 : -1);
             _dodgeDir = Vector2.Normalize(Open(s, here, dir) ? dir + side * .4f : Open(s, here, side) ? side : -side);
-            _dodgeUntil = s.Tick + enemy.Windup + 2;
+            _dodgeUntil = s.Tick + t.Left + 2;
             return new InputFrame(_dodgeDir, null, here + _dodgeDir, false, false, false);
         }
         return null;
@@ -94,8 +109,7 @@ public sealed class BotPlayer
         {
             var item = s.Items.Where(i => !Skipped.Contains(i.Id)).OrderBy(i => Vector2.Distance(GameSession.ToWorld(i.Cell), here)).FirstOrDefault();
             if (item == null) return InputFrame.None(here + s.Facing);
-            var to = GameSession.ToWorld(item.Cell) - here;
-            return new InputFrame(to.LengthSquared() > 1e-4f ? Vector2.Normalize(to) : Vector2.Zero, null, here, false, false, false);
+            return new InputFrame(Walk(s, item.Cell), null, here, false, false, false);
         }
         var at = GameSession.ToWorld(target.Position);
         float distance = Vector2.Distance(here, at);
@@ -111,7 +125,18 @@ public sealed class BotPlayer
         }
         bool dash = _p.UsesDash && hero.Skills.Cooldowns.GetValueOrDefault(Facts.Investida) == 0 && Steps(target, hero.Position) is >= 2 and <= 4
                     && Geo.LineOfSight(s.Grid, hero.Position, target.Position);
-        return new InputFrame(dash ? Vector2.Zero : Vector2.Normalize(at - here), null, aim, false, false, dash);
+        return new InputFrame(dash ? Vector2.Zero : Walk(s, target.Position), null, aim, false, false, dash);
+    }
+
+    /// <summary>Like a player steering: toward the centre of the next cell on UMBRA's own path (Navigation.shared_step,
+    /// around the other enemies), not in a straight line that catches on corners.</summary>
+    private static Vector2 Walk(GameSession s, (int X, int Y) goal)
+    {
+        var here = s.HeroWorld;
+        var bodies = s.Enemies.Where(e => e.Alive && e.Position != goal).Select(e => (e.X, e.Y));
+        var next = Navigation.SharedStep(s.Grid, s.Hero.Position, goal, bodies) ?? goal;
+        var to = GameSession.ToWorld(next) - here;
+        return to.LengthSquared() > 1e-4f ? Vector2.Normalize(to) : Vector2.Zero;
     }
 
     /// <summary>The bot's eye for Ruptura's cone: within reach (tiles) and 45° of the aim.</summary>

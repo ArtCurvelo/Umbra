@@ -75,7 +75,7 @@ public static class Analyst
         if (death > Targets.NovatoDeathMax)
             f.Add(new(Severity.Alta, "Dificuldade", "Difícil demais para quem está começando",
                       $"O Novato morreu em {P(death)} das partidas (meta: até {P(Targets.NovatoDeathMax)}).",
-                      "Reduzir o dano do Bruto, alongar a preparação do golpe ou dar mais vida inicial ao Bárbaro."));
+                      "Menos inimigos por grupo, preparação mais longa dos golpes ou mais vida inicial ao Bárbaro (decisão do Game Director)."));
         else if (death < Targets.NovatoDeathMin)
             f.Add(new(Severity.Media, "Dificuldade", "Sem risco nem para o Novato",
                       $"O Novato morreu em {P(death)} das partidas, só com o ataque básico e sem esquivar (meta: ao menos {P(Targets.NovatoDeathMin)}). " +
@@ -97,25 +97,25 @@ public static class Analyst
         if (death > Targets.VeteranoDeathMax)
             f.Add(new(Severity.Alta, "Dificuldade", "Até o jogador habilidoso morre",
                       $"O Veterano (reage em {N(s.Persona.ReactionTicks / 60.0, "0.00")} s e esquiva sempre) morreu em {P(death)} das partidas.",
-                      "Algum golpe não é esquivável na prática: revisar alcance e tempo de preparação do Bruto."));
+                      "Algum golpe não é esquivável na prática: revisar o alcance e a preparação dos golpes (inimigos e chefe)."));
         if (low > Targets.VeteranoLowestMax)
             f.Add(new(Severity.Media, "Dificuldade", "Fácil demais para quem joga bem",
                       $"O Veterano terminou com {P(low)} da vida no pior momento, em média (meta: {P(Targets.VeteranoLowestMin)}–{P(Targets.VeteranoLowestMax)}).",
-                      "Grupos maiores, um segundo tipo de inimigo ou golpes do Bruto que exijam mais de uma esquiva."));
+                      "Grupos maiores, mais elites ou golpes que exijam mais de uma esquiva."));
         else if (low < Targets.VeteranoLowestMin)
             f.Add(new(Severity.Media, "Dificuldade", "Punitivo mesmo jogando bem",
-                      $"O Veterano chegou a {P(low)} da vida no pior momento, em média.", "Reduzir o dano por golpe do Bruto ou dar cura entre salas."));
+                      $"O Veterano chegou a {P(low)} da vida no pior momento, em média.", "Reduzir o dano por golpe ou dar cura entre salas."));
         double landed = s.StrikeLandedShare;
         if (s.Strikes > 0 && landed > Targets.VeteranoStrikeLandedMax)
-            f.Add(new(Severity.Alta, "Combate", "O aviso do golpe do Bruto não dá tempo de esquivar",
-                      $"Mesmo esquivando sempre, {P(landed)} dos golpes do Bruto acertaram o Veterano ({s.Strikes} golpes).",
-                      $"Aumentar a preparação do Bruto (hoje {Facts.Brute().Windup} quadros = {N(Facts.Brute().Windup / 60.0, "0.00")} s)."));
+            f.Add(new(Severity.Alta, "Combate", "O aviso dos golpes não dá tempo de esquivar",
+                      $"Mesmo esquivando sempre, {P(landed)} dos golpes dos inimigos comuns acertaram o Veterano ({s.Strikes} golpes).",
+                      $"Aumentar a preparação dos golpes (hoje, em quadros: {Facts.Windups()})."));
         double locked = s.DodgeLockedShare;
         if (s.DodgesWanted > 0 && locked > Targets.DodgeLockedMax)
             f.Add(new(Severity.Alta, "Combate", "A esquiva chega tarde demais",
                       $"Em {P(locked)} das vezes que o Veterano esquivou (reage em {N(s.Persona.ReactionTicks / 60.0, "0.00")} s), o golpe acertou mesmo assim: " +
-                      $"sair da casa marcada levou mais que o resto da preparação do Bruto ({Facts.Brute().Windup} quadros).",
-                      "Preparação mais longa do Bruto ou arranque mais rápido do movimento."));
+                      $"sair das casas marcadas levou mais que o resto da preparação (em quadros: {Facts.Windups()}; o chefe tem a sua).",
+                      "Preparação mais longa ou arranque mais rápido do movimento."));
     }
 
     private static void DodgeReward(Summary vet, Summary agg, List<Finding> f)
@@ -125,7 +125,7 @@ public static class Analyst
         if (saved < .25)
             f.Add(new(Severity.Media, "Combate", "Esquivar quase não compensa",
                       $"O Veterano (esquiva) tomou {N(vet.MeanDamageTaken, "0")} de dano por partida; o Agressivo (nunca esquiva), {N(agg.MeanDamageTaken, "0")}. Diferença: {P(saved)}.",
-                      "Tornar o golpe do Bruto mais forte e mais legível, para premiar quem lê o aviso."));
+                      "No UMBRA o acerto cancela a preparação do inimigo comum: golpear protege mais que esquivar. Decisão do Game Director se a esquiva deve valer mais."));
         else
             f.Add(new(Severity.Ok, "Combate", "Esquivar compensa",
                       $"Quem esquiva toma {P(saved)} menos dano ({N(vet.MeanDamageTaken, "0")} contra {N(agg.MeanDamageTaken, "0")}).", "Nada a mudar."));
@@ -148,9 +148,10 @@ public static class Analyst
 
     private static string StrikeLine(Summary s)
     {
-        var hero = Facts.Hero(); var brute = Facts.Brute();
-        return s.DamagePerStrike <= 0 ? $"Nenhum golpe do Bruto acertou (ataque do Bruto {brute.Attack}, armadura do Bárbaro {hero.Defense})."
-            : $"Cada golpe do Bruto que acertou tirou em média {N(s.DamagePerStrike, "0")} de {hero.MaxHealth} de vida (ataque do Bruto {brute.Attack}, armadura do Bárbaro {hero.Defense}).";
+        var hero = Facts.Hero();
+        string attacks = string.Join(", ", Facts.Foes().Select(f => $"{f.Name} {f.Attack}"));
+        return s.DamagePerStrike <= 0 ? $"Nenhum golpe de inimigo comum acertou (ataques: {attacks}; armadura do Bárbaro {hero.Defense})."
+            : $"O dano tomado por golpe de inimigo comum que acertou foi, em média, {N(s.DamagePerStrike, "0")} de {hero.MaxHealth} de vida (inclui o chefe; ataques: {attacks}; armadura do Bárbaro {hero.Defense}).";
     }
 
     private static void Breakpoints(List<Finding> f)
@@ -160,8 +161,8 @@ public static class Analyst
             var rows = Facts.HitsToKill(id).ToList();
             var dead = rows.Skip(1).Where(r => r.Hits == rows[rows.IndexOf(r) - 1].Hits).Select(r => r.Rank).ToList();
             if (dead.Count == 0) continue;
-            f.Add(new(Severity.Baixa, "Árvore", $"Ranks de {Facts.Name(id)} que não mudam nada contra o Bruto",
-                      $"Golpes para derrotar um Bruto por rank (sem crítico nem combo): {string.Join(", ", rows.Select(r => $"rank {r.Rank} = {r.Hits} ({r.Damage} de dano)"))}. " +
+            f.Add(new(Severity.Baixa, "Árvore", $"Ranks de {Facts.Name(id)} que não mudam nada contra o {Facts.Toughest().Name}",
+                      $"Golpes para derrotar um {Facts.Toughest().Name} por rank (sem crítico nem combo): {string.Join(", ", rows.Select(r => $"rank {r.Rank} = {r.Hits} ({r.Damage} de dano)"))}. " +
                       $"Os ranks {string.Join(", ", dead)} gastam ponto sem tirar nenhum golpe.",
                       "Normal com ranks de ganho pequeno (+12% por passo; do 6 ao 15, meio passo). Se incomodar, é balanceamento do UMBRA (Game Director)."));
         }
@@ -173,11 +174,11 @@ public static class Analyst
         var vet = all.FirstOrDefault(s => s.Persona.Id == Persona.Veterano.Id) ?? all[^1];
         double kill = Summary.Median(all.SelectMany(s => s.Runs).SelectMany(r => r.KillTicks).Select(t => t / 60.0));
         if (kill < Targets.KillSecondsMin)
-            f.Add(new(Severity.Media, "Balanceamento", "Inimigos morrem rápido demais", $"Mediana de {N(kill)} s do primeiro golpe à morte.", "Mais vida para o Bruto."));
+            f.Add(new(Severity.Media, "Balanceamento", "Inimigos morrem rápido demais", $"Mediana de {N(kill)} s do primeiro golpe à morte.", "Mais vida para os inimigos comuns."));
         else if (kill > Targets.KillSecondsMax)
             f.Add(new(Severity.Media, "Balanceamento", "Inimigos são esponjas de dano", $"Mediana de {N(kill)} s do primeiro golpe à morte.", "Menos vida ou mais dano base."));
         else
-            f.Add(new(Severity.Ok, "Balanceamento", "Tempo para derrotar um Bruto adequado", $"Mediana de {N(kill)} s.", "Nada a mudar."));
+            f.Add(new(Severity.Ok, "Balanceamento", "Tempo para derrotar um inimigo comum adequado", $"Mediana de {N(kill)} s.", "Nada a mudar."));
 
         double spender = vet.DamageShare(Facts.Ruptura);
         if (spender < Targets.SpenderShareMin)

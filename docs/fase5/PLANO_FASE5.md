@@ -453,3 +453,44 @@ Regras do documento de direção:
   - **Resultado:** todos os perfis venceram todas as partidas, com a pior vida média entre 93% e 98%. A cripta cai em 8–18 s e um Bruto morre ~0,5 s depois do primeiro golpe. O Novato quase não é atingido.
   - **Causa:** o travamento por golpes descrito na 5.8c. Ele está nas regras do UMBRA, não no port.
   - **O teste "esquivar reduz o dano" saiu:** sem golpes que acertem, os dois perfis tomam ~0 de dano. Ele volta quando a slice tiver desafio (decisão do Game Director).
+
+## Desafio da slice: cripta como no UMBRA + chefe (2026-11-09) — aguardando aprovação do Game Director
+- **Decisão do Game Director:** opções A + B, com a família das criptas (sombra, espectro, cultista).
+- **População (`GameSession.Populate`):** a regra de masmorra do UMBRA (`world/sessions.create_floor`), aplicada à cripta da slice.
+  - **Grupos:** cada um dos 6 pontos de surgimento vale por uma sala: grupo com chance de ≈79%, de 1/2/3 inimigos (pesos 42/40/18), de um tipo só. O limite é de 10 inimigos, o do andar 1.
+  - **Nível:** os inimigos têm o nível do herói (`adventure_maps`: `max(1, andar, nível)`).
+  - **Elites:** sorteadas por `elites.roll` (5%).
+  - **Ajuste da slice:** a cripta tem 3 salas, e não as ~32 do UMBRA. A regra por sala, aplicada literalmente, daria ~3 inimigos.
+- **Chefe:** o Guardião das Cinzas (nível 5, `max(5, andar)`) no fundo da câmara.
+  - **Morte:** a recompensa é a de `process_enemy_deaths`: Fúria 28, XP e ouro do perfil, poção, ouro, arma, acessório, orbe e a relíquia própria do chefe (Brasa do Primeiro Carrasco).
+  - **Exportação:** a relíquia exigiu exportar `RELIC_BY_BOSS`. A exportação regravou só `equipment.json` e o manifesto.
+  - **Regra do UMBRA, mantida:** o chefe nunca dorme e usa habilidades a qualquer distância em que tenha linha de visão.
+  - **Fora:** as invocações do chefe (`process_summons`) não foram portadas; o Guardião não invoca.
+- **Poção:** botão novo (`player.use_potion`, 50% da vida). No UMBRA ela fica em Q/RB, que na slice já são a Ruptura e a câmera. Por isso usa R e o direcional esquerdo (PROVISÓRIO, remapeável). O contador aparece acima do painel.
+- **Telas (PROVISÓRIO até a fase de arte):**
+  - **Inimigos:** a família usa o modelo do Bruto com tinta e tamanho próprios, e o shader ganhou `tint` (branco = sem mudança). O chefe é maior, com a cor do perfil; elites têm borda dourada.
+  - **Casas vermelhas:** marcam onde um golpe vai cair (a casa marcada pelo inimigo; o golpe e a área de habilidade do chefe; as zonas). O vermelho se intensifica com a preparação. `GameSession.Danger`/`Threat`, a tela e o testador leem a mesma coisa.
+  - **Barra do chefe:** no topo, com nome, vida, fase e o que ele prepara.
+  - **Objetivo:** "Inimigos: x de y — o guardião espera".
+- **Testador e autopiloto:**
+  - **Caminho:** os dois andam pelo caminho do UMBRA (`Navigation.shared_step`). A linha reta prendia o herói na quina entre o salão e o corredor: a locomoção do UMBRA bloqueia os dois eixos ali, e uma pessoa contorna.
+  - **Poções:** os dois bebem; cada perfil tem o seu limite de vida (suposição sobre jogadores).
+  - **Esquiva:** o bot também esquiva das áreas do chefe.
+- **Testes:**
+  - xUnit 1 283/1 283; os novos cobrem a população, a recompensa do chefe, as casas de perigo e o botão de poção.
+  - Autoteste do Godot 36/36: o autopiloto limpa a cripta em 14,8 s com 112/230 de vida.
+  - `check.ps1` aprovado.
+- **Relatório (40 partidas por perfil):** `docs/betatest/desafio/`.
+
+  | Perfil | Antes: venceu / pior vida | Agora: venceu / pior vida | Meta |
+  |---|---|---|---|
+  | Novato | 100% / 96% | 63% / 11% | morrer 10–40% |
+  | Casual | 100% / 98% | 93% / 27% | — |
+  | Veterano | 100% / 98% | 100% / 34% | pior vida 30–75% |
+  | Agressivo | 100% / 98% | 100% / 49% | — |
+
+- **Para o Game Director:**
+  - **Esquivas tardias (34%):** a esquiva chega tarde em 34% das tentativas do Veterano. As preparações da família das criptas são curtas (Sombra 20, Espectro 17, Cultista 28 quadros).
+  - **Esquiva vs. golpe:** quem nunca esquiva (Agressivo) toma menos dano que o Veterano, porque no UMBRA o acerto cancela a preparação do inimigo comum.
+  - **Nível 6 (PROVISÓRIO):** o herói continua começando no nível 6.
+- **Telas para aprovação:** `docs/fase5/telas_58c_desafio/` (combate com o chefe e as casas vermelhas, aba Controles com a Poção).

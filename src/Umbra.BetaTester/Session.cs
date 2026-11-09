@@ -48,7 +48,7 @@ public static class Session
         var s = new GameSession(seed);
         var hero = s.Hero;
         var bot = new BotPlayer(persona, StableSeed(persona, seed));
-        rec.Enemies = s.Enemies.Count; rec.LowestHealth = hero.Health;
+        rec.Enemies = s.Enemies.Count; rec.EnemyLife = s.Enemies.Sum(e => e.MaxHealth); rec.LowestHealth = hero.Health;
         if (persona.SpendsPoints) foreach (var key in PointsPlan) if (TreeRules.Learn(hero, key)) rec.PointsSpent++;
 
         var firstHit = new Dictionary<int, int>();
@@ -107,6 +107,8 @@ public static class Session
                         rec.PickedUp++; Gear(persona, s, rec); break;
                     case LevelUpEvent:
                         rec.LevelUps++; break;
+                    case PotionEvent:
+                        rec.PotionsUsed++; break;
                 }
             }
 

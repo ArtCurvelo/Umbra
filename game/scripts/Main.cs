@@ -297,6 +297,6 @@ public partial class Main : Node3D
             else if (Input.IsKeyPressed(Key.Shift)) attack = true;   // Shift + click: swing in place
             else destination = aim;
         }
-        return new InputFrame(move, destination, aim, attack, Input.IsActionPressed("skill_1"), Input.IsActionPressed("skill_2"));
+        return new InputFrame(move, destination, aim, attack, Input.IsActionPressed("skill_1"), Input.IsActionPressed("skill_2"), Input.IsActionPressed("potion"));
     }
 }
