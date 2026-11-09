@@ -29,6 +29,14 @@ public static class HeroTables
     public static double IraPerLife => Root.Num("IRA_PER_LIFE");
 
     /// <summary>catalog.get_basic_skill: a Básica of any class (the 0.16 catalogs).</summary>
+    /// <summary>catalog.get_skill: a non-basic skill of any class (the 0.16 catalogs, Warlock forms included).</summary>
+    public static PyDict? SkillRow(string? id)
+    {
+        if (id == null || Data == null) return null;
+        var row = Data.Skills.Values.SelectMany(c => c.Skills.Concat(c.Extra)).FirstOrDefault(s => s.Id == id && s.Category != "Básica");
+        return row == null ? null : (PyDict)Py.FromJson(row.Raw)!;
+    }
+
     public static PyDict? BasicRow(string? id)
     {
         if (id == null || Data == null) return null;
@@ -67,7 +75,7 @@ public class HeroSkillHooks : PassiveHooks, ISkillHooks
 /// </summary>
 public sealed class Hero : ISkillUser, IGearOwner, ITreeOwner, IFoeTarget
 {
-    public static IHeroHooks Hooks = new NeutralHeroHooks();
+    public static IHeroHooks Hooks = new HeroCombat();
 
     public string Name { get; set; } = "Viajante";
     public string PlayerClass { get; }
@@ -90,7 +98,15 @@ public sealed class Hero : ISkillUser, IGearOwner, ITreeOwner, IFoeTarget
     public int MaxResource;
     public readonly string ResourceType, ResourceLabel;
     public double ResourceRegen, RegenAccumulator;
-    public int RegenerationTimer, SkillCooldown;
+    public int RegenerationTimer;
+    /// <summary>player.skill_cooldown: the global cooldown the 0.16 engine sets and the hero's tick runs down.</summary>
+    public int SkillCooldown { get => Skills.Cooldown; set => Skills.Cooldown = value; }
+    // basic attack (resolver)
+    public PendingAttack? Pending;
+    public bool AttackBuffered, SlotAttack;
+    public (int X, int Y) BufferDirection = (0, 1);
+    public CombatResult? LastResult;
+    public IReadOnlyList<Enemy> CombatEnemies = Array.Empty<Enemy>();
     public int DashCooldown { get; set; }
     public int Invulnerability, TemporaryPowerTimer, ShieldPoints, AttackCooldown, ComboIndex, ComboWindow;
     public double TemporaryPower;

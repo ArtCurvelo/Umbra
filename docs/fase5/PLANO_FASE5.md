@@ -50,8 +50,8 @@ Regras do documento de direção:
 | 5.6 | Itens da Reforge: quedas, raridades, afixos, espaços de equipamento, páginas da mochila, gemas, engastes, têmpera, encantamento, reciclagem, reparo, Códice, joalheiro, materiais | **Feito, com paridade** (2026-11-08) |
 | 5.7 | Inimigos e chefes: criação por andar, IA (percepção, perseguição, memória, recuo, ataque com preparação), estados, elites, dormência, os 8 chefes (fases, 12 habilidades, armadura óssea, zonas) | **Feito, com paridade** (2026-11-08) |
 | 5.8a | Núcleo do herói (todas as classes): atributos com equipamento, nível e experiência, recurso, dano recebido, poções, movimento, investida, passo por tick, coletas | **Feito, com paridade** (2026-11-09) |
-| 5.8b | Ataque básico com preparação (resolver) e habilidades usadas pelos espaços | Próximo |
-| 5.8c | A slice com o Bárbaro real (graus, itens e inimigos reais no lugar dos PROVISÓRIOS) | Pendente |
+| 5.8b | Ataque básico com preparação (resolver) e habilidades usadas pelos espaços | **Feito, com paridade** (2026-11-09) |
+| 5.8c | A slice com o Bárbaro real (graus, itens e inimigos reais no lugar dos PROVISÓRIOS) | Próximo |
 | 5.8d | Classes uma a uma nas suas regras próprias (Bruxo e Necromante por último, com 5.4b: invocações, cadáveres, Jaula, Grimório) | Pendente |
 | 5.9 | Mundo: as 6 regiões, cidades, teleportes, masmorras por família, dificuldade | Pendente |
 | 5.10 | Saves: conversor dos `slot_N.json` (versões 1, 2 e 3 e seções) para o formato novo, sem tocar nos originais | Pendente |
@@ -356,3 +356,44 @@ Regras do documento de direção:
   | guarda ancestral de 15% | 3 |
 
 - **Encontrado pela paridade:** a primeira versão não ligava os afixos de Fortificação do Necromante ao herói real. Três sequências falharam até ligar.
+
+## Entrega 5.8b (2026-11-09)
+- **`src/Umbra.Domain/Heroes/HeroCombat.cs`:** porta o `resolver.py` no caminho da 0.16, o `skills.use_skill`, as funções de `loadout` (`attack_slot`, `basic_from_slot`) e as portas de entrada compostas.
+  - **O golpe básico:**
+    - escolhe o inimigo mais próximo (ou o da mira) e trava a casa marcada;
+    - 5 quadros de preparação, recuperação pela velocidade de ataque (com Ferocidade);
+    - buffer de 5 quadros e combo de 3 golpes (×1,00 / ×1,07 / ×1,15) com janela de 38 quadros;
+    - cancelamento por movimento, dano ou troca de espaço;
+    - na resolução, o golpe da 0.16 (`strike`) e o aspecto lendário do golpe básico.
+  - **Os espaços:**
+    - uma habilidade comum no espaço 1 é conjurada pelo botão de ataque;
+    - uma Básica nos espaços 2–5 ataca como o botão;
+    - as verificações de recarga e custo vêm antes;
+    - o escudo dos aspectos ao conjurar.
+  - **`Hero`:** passou a ter o golpe pendente, o buffer, o resultado do último golpe e a recarga global (`skill_cooldown`), que agora é o mesmo campo do motor de habilidades, como no Python.
+- **Caminho antigo encontrado pela paridade:**
+  - **O que acontece:** o golpe básico anterior à 0.16 parecia inalcançável, mas o UMBRA o executa num caso. Uma Básica usada por um espaço deixa o golpe pendente, o botão de ataque apaga a Básica do espaço, e o espaço 1 tem uma habilidade comum. O golpe então resolve sem Básica, como dano físico simples com 5 de recurso.
+  - **No port:** esse caso foi reproduzido igual. Qualquer outro uso do caminho antigo lança erro.
+- **Paridade: 105 sequências (13 372 operações) com heróis reais (5 classes sem invocações) contra inimigos reais com a IA da 5.7, no laço completo do motor.**
+  - Cobrem 1 981 golpes, 495 habilidades conjuradas, golpes contra parede e casa vazia, buffer, cancelamentos e aspectos lendários no golpe e ao conjurar.
+  - A cada passo são conferidos o herói inteiro e cada inimigo.
+- **Testes: xUnit 1 235/1 235; autoteste do Godot 35/35.**
+- **Prova de mutação: 13 erros detectados.**
+
+  | Erro inserido | Sequências que falham |
+  |---|---|
+  | ataque sem escolher a arma da Básica | 99 |
+  | preparação de 6 quadros | 82 |
+  | recuperação de 13 quadros | 82 |
+  | botão de ataque mantendo a Básica do espaço | 75 |
+  | janela de combo de 37 | 63 |
+  | golpe básico com 1 de recurso a menos | 57 |
+  | cancelamento deixando 8 de recarga | 38 |
+  | janela de buffer de 4 | 9 |
+  | 2º golpe do combo ×1,08 | 7 |
+  | habilidade exigindo recurso acima do custo | 5 |
+  | alvo procurado só até 7 casas | 3 |
+  | escudo ao conjurar de 10% (caso acrescentado depois da primeira rodada) | 2 |
+  | alvo pelo passo antes da distância | 1 |
+
+- **Mutação sem efeito possível (registrada):** o atordoamento de 4 quadros do caminho antigo. O próprio dano do inimigo já aplica 4 quadros em inimigos comuns; só faria diferença em chefes.
