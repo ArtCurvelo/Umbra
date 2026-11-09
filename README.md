@@ -69,4 +69,5 @@ Plano, método e estado: [docs/fase5/PLANO_FASE5.md](docs/fase5/PLANO_FASE5.md).
 ..\umbra-ashes-below\.venv\Scripts\python.exe tools\parity\tree_parity.py
 ..\umbra-ashes-below\.venv\Scripts\python.exe tools\parity\items_parity.py
 ..\umbra-ashes-below\.venv\Scripts\python.exe tools\parity\enemies_parity.py
+..\umbra-ashes-below\.venv\Scripts\python.exe tools\parity\hero_parity.py
 ```

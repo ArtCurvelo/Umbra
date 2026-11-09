@@ -48,8 +48,9 @@ public class ParityResourcesTests
 
     static ParityResourcesTests()
     {
-        Resources.AffixShare = (e, key) => e is Fake f && f.Hooks.TryGetValue("affix_" + key, out var v) ? v : 0;
-        Resources.GrimoireBonus = (e, key) => e is Fake f && f.Hooks.TryGetValue("grimoire_" + key, out var v) ? v : 0;
+        var affix = Resources.AffixShare; var grimoire = Resources.GrimoireBonus;     // chained: other test classes keep theirs
+        Resources.AffixShare = (e, key) => e is Fake f ? (f.Hooks.TryGetValue("affix_" + key, out var v) ? v : 0) : affix?.Invoke(e, key) ?? 0;
+        Resources.GrimoireBonus = (e, key) => e is Fake f ? (f.Hooks.TryGetValue("grimoire_" + key, out var v) ? v : 0) : grimoire?.Invoke(e, key) ?? 0;
     }
 
     private static readonly JsonElement Root = JsonDocument.Parse(File.ReadAllText(

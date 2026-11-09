@@ -46,6 +46,7 @@ public sealed class TreeCatalog
     public static int MaxRank { get; private set; } = 15;
     public static int PassiveRank { get; private set; } = 3;
     public static int SlotCount { get; private set; } = 5;
+    public static int MaxLevel { get; private set; } = 70;
     private static Dictionary<string, TreeCatalog>? _classes;
 
     public static void Load(string dataRoot)
@@ -53,7 +54,7 @@ public sealed class TreeCatalog
         var root = JsonDocument.Parse(File.ReadAllText(Path.Combine(dataRoot, "trees.json"), Encoding.UTF8)).RootElement;
         EffectCaps = root.GetProperty("EFFECT_CAPS").EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetDouble());
         MaxRank = root.GetProperty("MAX_RANK").GetInt32(); PassiveRank = root.GetProperty("PASSIVE_RANK").GetInt32();
-        SlotCount = root.GetProperty("SLOTS").GetInt32();
+        SlotCount = root.GetProperty("SLOTS").GetInt32(); MaxLevel = root.GetProperty("MAX_LEVEL").GetInt32();
         _classes = root.GetProperty("classes").EnumerateObject().ToDictionary(p => p.Name, p => new TreeCatalog(p.Value));
     }
 

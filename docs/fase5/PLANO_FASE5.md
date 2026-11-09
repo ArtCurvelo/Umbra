@@ -49,7 +49,10 @@ Regras do documento de direção:
 | 5.5 | Árvore e graus reais, espaços de habilidade, passivas de classe | **Feito, com paridade** (2026-11-08) |
 | 5.6 | Itens da Reforge: quedas, raridades, afixos, espaços de equipamento, páginas da mochila, gemas, engastes, têmpera, encantamento, reciclagem, reparo, Códice, joalheiro, materiais | **Feito, com paridade** (2026-11-08) |
 | 5.7 | Inimigos e chefes: criação por andar, IA (percepção, perseguição, memória, recuo, ataque com preparação), estados, elites, dormência, os 8 chefes (fases, 12 habilidades, armadura óssea, zonas) | **Feito, com paridade** (2026-11-08) |
-| 5.8 | Classes, uma por vez (Bárbaro primeiro; Necromante por último, com lacaios e Grimório) | Próximo |
+| 5.8a | Núcleo do herói (todas as classes): atributos com equipamento, nível e experiência, recurso, dano recebido, poções, movimento, investida, passo por tick, coletas | **Feito, com paridade** (2026-11-09) |
+| 5.8b | Ataque básico com preparação (resolver) e habilidades usadas pelos espaços | Próximo |
+| 5.8c | A slice com o Bárbaro real (graus, itens e inimigos reais no lugar dos PROVISÓRIOS) | Pendente |
+| 5.8d | Classes uma a uma nas suas regras próprias (Bruxo e Necromante por último, com 5.4b: invocações, cadáveres, Jaula, Grimório) | Pendente |
 | 5.9 | Mundo: as 6 regiões, cidades, teleportes, masmorras por família, dificuldade | Pendente |
 | 5.10 | Saves: conversor dos `slot_N.json` (versões 1, 2 e 3 e seções) para o formato novo, sem tocar nos originais | Pendente |
 | 5.11 | Co-op local | Pendente |
@@ -86,6 +89,11 @@ Regras do documento de direção:
   - a criação dos inimigos de uma região (quais tipos, onde, elites sorteadas com o gerador da região, escala de dificuldade `difficulty.scale`) e as cidades são o mundo (5.9). Por enquanto o santuário só tem o gancho `IMap.Sanctuary`/`Gate`;
   - a morte dos inimigos (XP, ouro, quedas, `process_enemy_deaths`) e as invocações pedidas pelo chefe (`process_summons`) são do motor (5.8/5.9);
   - `EnemyAI.Active` faz o papel de `dungeon._active_enemies` (a lista de inimigos do mapa, definida pelo motor antes do passo dos inimigos).
+- **Herói (`Heroes/Hero.cs`):**
+  - o ataque básico (`resolver`: preparação, golpe, combo, cancelamento) chega por `IHeroHooks` e é a 5.8b. Por enquanto só correm os seus temporizadores;
+  - o desvio de dano para o Colosso de Ferro (`necro_specializations.redirect`) e os passos do Bruxo e do Necromante no tick (`warlock.tick`, `necro3.tick`) vêm com essas classes;
+  - morte, renascimento, Hardcore e desgaste por morte são do motor e dos saves (5.9/5.10);
+  - `character_id` (uuid) é gerado na criação e não entra na paridade.
 - **Fora do domínio (apresentação, no Godot):** `skill_started_at`, som do lançamento, `del motion` do Retorno.
 - **Ligação com a slice:** o combate da slice ainda usa o modelo da Fase 2. Pôr o Bárbaro nas regras reais (cooldowns, recurso, golpe básico com preparação) é a 5.8.
 - **Gatilhos que o jogo chama e o domínio não decide:**
@@ -303,3 +311,48 @@ Regras do documento de direção:
   - a armadura óssea extra da fase II (`bone_armor += 45` em `check_phase`) **nunca acontece no UMBRA**: o golpe que derruba o Colosso abaixo de 50% sempre gasta a armadura antes. É uma regra inerte no original, mantida igual. Vale a decisão do diretor criativo se ela deveria funcionar.
 - **Lacunas que a prova de mutação revelou nos primeiros casos:** nenhum caso parava um chefe entre 50% e 55% da vida, e nenhum mapa permitia um inimigo a exatamente 30 casas. Ganharam casos próprios.
 - **Sem efeito no jogo ainda:** a slice continua com o inimigo simples da Fase 2. A ligação acontece com o Bárbaro e o motor (5.8).
+
+## Entrega 5.8a (2026-11-09)
+- **Divisão da 5.8:**
+  - 5.8a: núcleo do herói, comum a todas as classes;
+  - 5.8b: ataque básico e habilidades nos espaços;
+  - 5.8c: a slice passando para o Bárbaro real;
+  - 5.8d: as regras próprias de cada classe.
+- **Dados:** `game/data/umbra/heroes.json`. Traz os atributos de classe ao vivo (depois de `balance.py`), os recursos de cada classe e a Ira do Bruxo.
+- **`src/Umbra.Domain/Heroes/Hero.cs`:** um só `Hero` serve o motor de habilidades, os itens, a árvore, os inimigos e os recursos. Segue as cadeias compostas do UMBRA:
+  - **criação:** 5 camadas;
+  - **`recalculate_stats`:** equipamento, depois `compatibility` (+ forja antiga), depois `balance`, depois passivas (vida) e auras (recurso);
+  - **`take_damage`:** aspectos lendários, depois santuário, depois `balance` (intangível, Último Fôlego, guarda, barreira, escudo), depois o original (redução, ×1,38, armadura, defesa), e por fim a Ira do Bruxo;
+  - **`gain_xp`:** `balance` reduz para 58% e depois sobe de nível pela curva da Reforge;
+  - **`get_attack_damage`:** `balance` com os aspectos lendários. Sorteia o crítico sempre, mesmo com chance 0;
+  - **outros:** poção (com Bastião), movimento, investida (com Passos do Vento e Passo do Eclipse), coleta e o tick.
+- **Ganchos ligados:**
+  - os afixos de item do herói real entram nos recursos (`Resources.AffixShare`) e no motor de habilidades (`HeroSkillHooks`);
+  - os ganchos compartilhados passaram a encadear, para que classes de teste em paralelo não se sobrescrevam;
+  - os testes do motor e do herói ficam na mesma coleção do xUnit, porque usam o mesmo `SkillEnv`.
+- **Paridade: 119 sequências (7 672 operações) com heróis reais das 7 classes.**
+  - Cobrem níveis até 70, dano com cada camada, recurso, regeneração, poções, movimento e investida, estados, acúmulos, Fortificação, passivas de classe, equipamento, 8 aspectos lendários e coletas.
+  - A cada passo são conferidos todos os atributos, temporizadores, estados e contadores do herói.
+- **Testes: xUnit 1 130/1 130** (inclui os do beta tester, de outra sessão); **autoteste do Godot 35/35.**
+- **Prova de mutação: 16 erros inseridos, 16 detectados.**
+
+  | Erro inserido | Sequências que falham |
+  |---|---|
+  | experiência a 60% | 119 |
+  | ataque base a cada 3 níveis | 115 |
+  | vida +9 por nível | 115 |
+  | curva de nível 1,5 | 107 |
+  | poção curando 45% | 68 |
+  | dano recebido ×1,40 | 61 |
+  | amuleto contando duas vezes | 44 |
+  | sem o sorteio de crítico com chance 0 | 40 |
+  | investida de 2 casas | 25 |
+  | defesa absorvendo 60% | 24 |
+  | intangível levando dano | 23 |
+  | teto da arma 0,35 por nível | 17 |
+  | regeneração só acima de 1 | 16 |
+  | Bastião de 10% | 14 |
+  | investida dando 2 de Fúria | 7 |
+  | guarda ancestral de 15% | 3 |
+
+- **Encontrado pela paridade:** a primeira versão não ligava os afixos de Fortificação do Necromante ao herói real. Três sequências falharam até ligar.

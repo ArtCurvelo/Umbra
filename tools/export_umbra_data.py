@@ -106,6 +106,16 @@ def foes():
     }
 
 
+def heroes():
+    """Hero tables (step 5.8): the live class stats after core.balance (entities.player.CLASSES), the class resources
+    (skills.catalog.CLASS_SPECS) and the Warlock's Ira from damage taken."""
+    import game.core.engine  # noqa: F401
+    from game.entities import player
+    from game.skills.catalog import CLASS_SPECS
+    from game.combat_system import warlock
+    return {'CLASSES': player.CLASSES, 'CLASS_SPECS': CLASS_SPECS, 'IRA_PER_LIFE': warlock.IRA_PER_LIFE}
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     hashes = {}
@@ -135,6 +145,7 @@ def main():
     hashes['trees.json'] = write('trees.json', trees())
     hashes['equipment.json'] = write('equipment.json', equipment())
     hashes['foes.json'] = write('foes.json', foes())
+    hashes['heroes.json'] = write('heroes.json', heroes())
 
     commit = subprocess.run(['git', '-C', str(UMBRA), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip()
     branch = subprocess.run(['git', '-C', str(UMBRA), 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True).stdout.strip()

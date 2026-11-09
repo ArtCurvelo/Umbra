@@ -1,0 +1,238 @@
+{
+ "CLASSES": {
+  "guerreiro": {
+   "health": 142,
+   "mana": 62,
+   "mana_regen": 0.05,
+   "attack": 16,
+   "defense": 6,
+   "color": [
+    190,
+    65,
+    65
+   ],
+   "skill": "Golpe Pesado",
+   "mana_cost": 26
+  },
+  "mago": {
+   "health": 85,
+   "mana": 160,
+   "mana_regen": 0.16,
+   "attack": 28,
+   "defense": 2,
+   "color": [
+    100,
+    100,
+    220
+   ],
+   "skill": "Lança Glacial",
+   "mana_cost": 28
+  },
+  "ladino": {
+   "health": 115,
+   "mana": 0,
+   "mana_regen": 0.0,
+   "attack": 15,
+   "defense": 4,
+   "color": [
+    70,
+    180,
+    120
+   ],
+   "skill": "Punhalada",
+   "mana_cost": 24
+  },
+  "paladino": {
+   "health": 175,
+   "mana": 0,
+   "mana_regen": 0.0,
+   "attack": 15,
+   "defense": 10,
+   "color": [
+    220,
+    190,
+    90
+   ],
+   "skill": "Martelo da Aurora",
+   "mana_cost": 28
+  },
+  "barbaro": {
+   "health": 190,
+   "mana": 0,
+   "mana_regen": 0.0,
+   "attack": 22,
+   "defense": 8,
+   "color": [
+    190,
+    75,
+    55
+   ],
+   "skill": "Redemoinho",
+   "mana_cost": 35
+  },
+  "bruxo": {
+   "health": 110,
+   "mana": 0,
+   "mana_regen": 0.0,
+   "attack": 25,
+   "defense": 3,
+   "color": [
+    155,
+    85,
+    190
+   ],
+   "skill": "Maldição Devoradora",
+   "mana_cost": 24
+  },
+  "druida": {
+   "health": 135,
+   "mana": 0,
+   "mana_regen": 0.0,
+   "attack": 21,
+   "defense": 6,
+   "color": [
+    95,
+    165,
+    105
+   ],
+   "skill": "Raízes Prendentes",
+   "mana_cost": 24
+  },
+  "necromante": {
+   "health": 105,
+   "mana": 0,
+   "mana_regen": 0.03,
+   "attack": 23,
+   "defense": 3,
+   "color": [
+    111,
+    185,
+    161
+   ],
+   "skill": "Lança de Ossos",
+   "mana_cost": 25
+  }
+ },
+ "CLASS_SPECS": {
+  "barbaro": {
+   "label": "Bárbaro",
+   "health": 190,
+   "mana": 0,
+   "attack": 22,
+   "defense": 8,
+   "color": [
+    190,
+    75,
+    55
+   ],
+   "resource": "fury",
+   "resource_label": "FÚRIA",
+   "resource_max": 100,
+   "resource_regen": 0.0,
+   "description": "Fúria cresce no combate e é recolhida dos inimigos derrotados."
+  },
+  "mago": {
+   "label": "Mago",
+   "health": 85,
+   "mana": 160,
+   "attack": 28,
+   "defense": 2,
+   "color": [
+    95,
+    125,
+    225
+   ],
+   "resource": "mana",
+   "resource_label": "MANA",
+   "resource_max": 160,
+   "resource_regen": 0.16,
+   "description": "Domina feitiços arcanos com uma grande reserva de mana."
+  },
+  "ladino": {
+   "label": "Ladino",
+   "health": 115,
+   "mana": 0,
+   "attack": 15,
+   "defense": 4,
+   "color": [
+    70,
+    185,
+    125
+   ],
+   "resource": "energy",
+   "resource_label": "ENERGIA",
+   "resource_max": 100,
+   "resource_regen": 0.2,
+   "description": "Gera energia com ataques e movimentos precisos."
+  },
+  "paladino": {
+   "label": "Paladino",
+   "health": 175,
+   "mana": 0,
+   "attack": 15,
+   "defense": 10,
+   "color": [
+    220,
+    190,
+    90
+   ],
+   "resource": "faith",
+   "resource_label": "FÉ",
+   "resource_max": 100,
+   "resource_regen": 0.04,
+   "description": "Converte combate e proteção em poder sagrado."
+  },
+  "bruxo": {
+   "label": "Bruxo",
+   "health": 110,
+   "mana": 0,
+   "attack": 25,
+   "defense": 3,
+   "color": [
+    155,
+    85,
+    190
+   ],
+   "resource": "shards",
+   "resource_label": "IRA",
+   "resource_max": 100,
+   "resource_regen": 0.0,
+   "description": "Converte a Ira do combate em maldições, formas e demônios."
+  },
+  "druida": {
+   "label": "Druida",
+   "health": 135,
+   "mana": 0,
+   "attack": 21,
+   "defense": 6,
+   "color": [
+    95,
+    165,
+    105
+   ],
+   "resource": "essence",
+   "resource_label": "ESSÊNCIA",
+   "resource_max": 120,
+   "resource_regen": 0.06,
+   "description": "Canaliza a essência viva para curar e devastar."
+  },
+  "necromante": {
+   "label": "Necromante",
+   "health": 105,
+   "mana": 0,
+   "attack": 23,
+   "defense": 3,
+   "color": [
+    111,
+    185,
+    161
+   ],
+   "resource": "death_essence",
+   "resource_label": "ESSÊNCIA",
+   "resource_max": 100,
+   "resource_regen": 0.03,
+   "description": "Gera essência com ossos e sangue; comanda esqueletos e consome cadáveres."
+  }
+ },
+ "IRA_PER_LIFE": 50
+}

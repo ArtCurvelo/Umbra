@@ -14,6 +14,8 @@ namespace Umbra.Domain.Tests;
 /// the full hero (life, resource, position, states, cooldowns, charges, stacks, imbue, ramp, zones, events, effects,
 /// auras, channel) and every enemy. The fixture (hero, enemies, map) is the same as the Python one, rule for rule.
 /// </summary>
+/// <remarks>Shares SkillEnv (random generator and hooks) with ParityHeroTests: same collection, never in parallel.</remarks>
+[Collection("SkillEnv")]
 public class ParitySkillsTests
 {
     private sealed class Map : IMap
